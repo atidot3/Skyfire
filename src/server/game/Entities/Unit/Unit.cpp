@@ -13864,6 +13864,8 @@ void Unit::Kill(Unit* victim, bool durabilityLoss)
     // call kill spell proc event (before real die and combat stop to triggering auras removed at death/combat stop)
     if (isRewardAllowed && player && player != victim)
     {
+        sScriptMgr->OnPlayerbotCheckKillTask(player, victim);
+
         ObjectGuid playerGuid = player->GetGUID();
         ObjectGuid victimGuid = victim->GetGUID();
         WorldPacket data(SMSG_PARTYKILLLOG); // send event PARTY_KILL

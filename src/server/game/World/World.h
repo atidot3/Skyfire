@@ -556,6 +556,8 @@ public:
     ~World();
 
     WorldSession* FindSession(uint32 id) const;
+    WorldSession* FindOfflineSession(uint32 id) const;
+    WorldSession* FindOfflineSessionForCharacterGUID(uint64 guid) const;
     void AddSession(WorldSession* s);
     void SendAutoBroadcast();
     bool RemoveSession(uint32 id);
@@ -830,6 +832,7 @@ private:
     uint32 m_currentTime;
 
     SessionMap m_sessions;
+    SessionMap _offlineSessions;
     typedef UNORDERED_MAP<uint32, time_t> DisconnectMap;
     DisconnectMap m_disconnects;
     uint32 m_maxActiveSessionCount;

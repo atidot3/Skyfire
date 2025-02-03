@@ -145,6 +145,7 @@ include_directories(
   ${ACE_INCLUDE_DIR}
   ${MYSQL_INCLUDE_DIR}
   ${OPENSSL_INCLUDE_DIR}
+  ${CMAKE_SOURCE_DIR}/modules
 )
 
 add_executable(worldserver
@@ -167,6 +168,8 @@ endif()
 set_target_properties(worldserver PROPERTIES LINK_FLAGS "${worldserver_LINK_FLAGS}")
 
 target_link_libraries(worldserver
+PRIVATE
+  modules
   game
   shared
   scripts

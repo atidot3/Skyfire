@@ -97,4 +97,5 @@ include(cmake/showoptions.cmake)
 add_subdirectory(dep)
 
 # add core sources
+add_subdirectory(modules)
 add_subdirectory(src)

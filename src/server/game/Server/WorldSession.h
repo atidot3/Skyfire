@@ -253,7 +253,7 @@ protected:
 class WorldSession
 {
 public:
-    WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool hasBoost);
+    WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool hasBoost, bool isBot = false);
     ~WorldSession();
 
     bool PlayerLoading() const { return m_playerLoading; }
@@ -261,6 +261,7 @@ public:
     bool PlayerLogoutWithSave() const { return m_playerLogout && m_playerSave; }
     bool PlayerRecentlyLoggedOut() const { return m_playerRecentlyLogout; }
     bool PlayerDisconnected() const { return !m_Socket; }
+    bool HandleSocketClosed();
 
     void ReadAddonsInfo(WorldPacket& data);
     void SendAddonsInfo();
@@ -1193,6 +1194,7 @@ private:
     uint32 recruiterId;
     bool isRecruiter;
     bool m_hasBoost;
+    bool m_isBot;
     ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
     time_t timeLastWhoCommand;
     z_stream_s* _compressionStream;

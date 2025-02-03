@@ -125,6 +125,12 @@ World::~World()
         m_sessions.erase(m_sessions.begin());
     }
 
+    while (!_offlineSessions.empty())
+    {
+        delete _offlineSessions.begin()->second;
+        _offlineSessions.erase(_offlineSessions.begin());
+    }
+
     CliCommandHolder* command = NULL;
     while (cliCmdQueue.next(command))
         delete command;
@@ -194,6 +200,27 @@ WorldSession* World::FindSession(uint32 id) const
         return NULL;
 }
 
+WorldSession* World::FindOfflineSessionForCharacterGUID(uint64 guid) const
+{
+    if (_offlineSessions.empty())
+        return nullptr;
+
+    for (SessionMap::const_iterator itr = _offlineSessions.begin(); itr != _offlineSessions.end(); ++itr)
+        if (itr->second->GetGuidLow() == guid)
+            return itr->second;
+
+    return nullptr;
+}
+
+WorldSession* World::FindOfflineSession(uint32 id) const
+{
+    SessionMap::const_iterator itr = _offlineSessions.find(id);
+    if (itr != _offlineSessions.end())
+        return itr->second;
+    else
+        return nullptr;
+}
+
 /// Remove a given session
 bool World::RemoveSession(uint32 id)
 {
@@ -241,11 +268,29 @@ void World::AddSession_(WorldSession* s)
 
         if (old != m_sessions.end())
         {
+            WorldSession* oldSession = old->second;
+
             // prevent decrease sessions count if session queued
             if (RemoveQueuedPlayer(old->second))
                 decrease_session = false;
-            // not remove replaced session form queue if listed
-            delete old->second;
+            
+            // there should be no offline session if current one is logged onto a character
+            if (oldSession->HandleSocketClosed())
+            {
+                SessionMap::iterator iter;
+                if ((iter = _offlineSessions.find(oldSession->GetAccountId())) != _offlineSessions.end())
+                {
+                    WorldSession* tmp = iter->second;
+                    _offlineSessions.erase(iter);
+                    delete tmp;
+                }
+                else
+                    _offlineSessions[oldSession->GetAccountId()] = oldSession;
+            }
+            else
+            {
+                delete oldSession;
+            }
         }
     }
 
@@ -2109,6 +2154,8 @@ void World::Update(uint32 diff)
     if (m_gameTime > m_NextCurrencyReset)
         ResetCurrencyWeekCap();
 
+    sScriptMgr->OnPlayerbotUpdate(diff);
+
     /// <ul><li> Handle auctions when the timer has passed
     if (m_timers[WUPDATE_BLACK_MARKET].Passed())
     {
@@ -2459,6 +2506,11 @@ void World::KickAll()
     // session not removed at kick and will removed in next update tick
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
         itr->second->KickPlayer();
+
+    for (SessionMap::const_iterator itr = _offlineSessions.begin(); itr != _offlineSessions.end(); ++itr)
+        itr->second->KickPlayer();
+
+    sScriptMgr->OnPlayerbotLogoutBots();
 }
 
 /// Kick (and save) all players with security level less `sec`
@@ -2785,12 +2837,44 @@ void World::UpdateSessions(uint32 diff)
         WorldSession* pSession = itr->second;
         WorldSessionFilter updater(pSession);
 
+        if (pSession->HandleSocketClosed())
+        {
+            if (!RemoveQueuedPlayer(pSession))
+                m_disconnects[pSession->GetAccountId()] = time(NULL);
+            m_sessions.erase(itr);
+            // there should be no offline session if current one is logged onto a character
+            SessionMap::iterator iter;
+            if ((iter = _offlineSessions.find(pSession->GetAccountId())) != _offlineSessions.end())
+            {
+                WorldSession* tmp = iter->second;
+                _offlineSessions.erase(iter);
+                delete tmp;
+            }
+            _offlineSessions[pSession->GetAccountId()] = pSession;
+            continue;
+        }
+
         if (!pSession->Update(diff, updater))    // As interval = 0
         {
             if (!RemoveQueuedPlayer(itr->second) && itr->second && getIntConfig(WorldIntConfigs::CONFIG_INTERVAL_DISCONNECT_TOLERANCE))
                 m_disconnects[itr->second->GetAccountId()] = time(NULL);
             RemoveQueuedPlayer(pSession);
             m_sessions.erase(itr);
+            delete pSession;
+        }
+    }
+
+    if (_offlineSessions.empty())
+        return;
+    uint32 currTime = time(NULL);
+    for (SessionMap::iterator itr = _offlineSessions.begin(), next; itr != _offlineSessions.end(); itr = next)
+    {
+        next = itr;
+        ++next;
+        WorldSession* pSession = itr->second;
+        if (!pSession->GetPlayer() || m_disconnects[pSession->GetAccountId()] + 60 < currTime)
+        {
+            _offlineSessions.erase(itr);
             delete pSession;
         }
     }

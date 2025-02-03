@@ -9,6 +9,7 @@
 #include "Battleground.h"
 #include "CalendarMgr.h"
 #include "CharacterBoost.h"
+#include "CharacterHandler.h"
 #include "Chat.h"
 #include "Common.h"
 #include "DatabaseEnv.h"
@@ -35,19 +36,6 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
-
-class LoginQueryHolder : public SQLQueryHolder
-{
-private:
-    uint32 m_accountId;
-    uint64 m_guid;
-public:
-    LoginQueryHolder(uint32 accountId, uint64 guid)
-        : m_accountId(accountId), m_guid(guid) { }
-    uint64 GetGuid() const { return m_guid; }
-    uint32 GetAccountId() const { return m_accountId; }
-    bool Initialize();
-};
 
 bool LoginQueryHolder::Initialize()
 {
@@ -816,6 +804,95 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recvData)
         SF_LOG_ERROR("network", "Account (%u) can't login with that character (%u).", GetAccountId(), GUID_LOPART(playerGuid));
         KickPlayer();
         return;
+    }
+
+    auto SendCharLogin = [&](ResponseCodes result)
+    {
+        WorldPacket data(SMSG_LOGIN_SET_TIME_SPEED, 1);
+        data << uint8(result);
+        SendPacket(&data);
+    };
+
+    // pussywizard:
+    if (WorldSession* sess = sWorld->FindOfflineSessionForCharacterGUID(playerGuid))
+    {
+        if (sess->GetAccountId() != GetAccountId())
+        {
+            SendCharLogin(ResponseCodes::CHAR_LOGIN_FAILED);
+            return;
+        }
+    }
+    // pussywizard:
+    if (WorldSession* sess = sWorld->FindOfflineSession(GetAccountId()))
+    {
+        Player* p = sess->GetPlayer();
+        if (!p)
+        {
+            SendCharLogin(ResponseCodes::CHAR_LOGIN_DUPLICATE_CHARACTER);
+            return;
+        }
+
+        if (p->GetGUID() != playerGuid)
+            sess->KickPlayer(); // no return, go to normal loading
+        else
+        {
+            // pussywizard: players stay ingame no matter what (prevent abuse), but allow to turn it off to stop crashing
+            /*if (!sWorld->getBoolConfig(CONFIG_ENABLE_LOGIN_AFTER_DC))
+            {
+                SendCharLogin(CHAR_LOGIN_DUPLICATE_CHARACTER);
+                return;
+            }*/
+
+            uint8 limitA = 10, limitB = 10, limitC = 10; // pussywizard: this somehow froze (probably, ahh crash logs ...), and while (far) have never frozen in LogoutPlayer o_O maybe it's the combination of while(far); while(near);
+            while (sess->GetPlayer() && (sess->GetPlayer()->IsBeingTeleportedFar() || (sess->GetPlayer()->IsInWorld() && sess->GetPlayer()->IsBeingTeleportedNear())))
+            {
+                if (limitA == 0 || --limitA == 0)
+                {
+                    SF_LOG_INFO("misc", "HandlePlayerLoginOpcode A");
+                    break;
+                }
+                while (sess->GetPlayer() && sess->GetPlayer()->IsBeingTeleportedFar())
+                {
+                    if (limitB == 0 || --limitB == 0)
+                    {
+                        SF_LOG_INFO("misc", "HandlePlayerLoginOpcode B");
+                        break;
+                    }
+                    sess->HandleMoveWorldportAckOpcode();
+                }
+                while (sess->GetPlayer() && sess->GetPlayer()->IsInWorld() && sess->GetPlayer()->IsBeingTeleportedNear())
+                {
+                    if (limitC == 0 || --limitC == 0)
+                    {
+                        SF_LOG_INFO("misc", "HandlePlayerLoginOpcode C");
+                        break;
+                    }
+
+                    Player* plMover = sess->GetPlayer()->m_mover->ToPlayer();
+                    if (!plMover)
+                        break;
+
+                    
+                    /*WorldPacket pkt(SMSG_MOVE_TELEPORT, 20);
+                    pkt << plMover->GetPackGUID();
+                    pkt << uint32(0); // flags
+                    pkt << uint32(0); // time
+                    sess->HandleMoveTeleportAck(pkt);*/
+                }
+            }
+            if (!p->FindMap() || !p->IsInWorld())
+            {
+                SendCharLogin(ResponseCodes::CHAR_LOGIN_DUPLICATE_CHARACTER);
+                return;
+            }
+
+            sess->SetPlayer(nullptr);
+            SetPlayer(p);
+            delete p->PlayerTalkClass;
+            //p->PlayerTalkClass = new PlayerMenu(sess);
+            //HandlePlayerLoginToCharInWorld(p);
+            return;
+        }
     }
 
     LoginQueryHolder* holder = new LoginQueryHolder(GetAccountId(), playerGuid);

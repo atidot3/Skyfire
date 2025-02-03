@@ -21,110 +21,6 @@
 #include "Vehicle.h"
 #include "WorldPacket.h"
 
-namespace
-{
-    typedef std::set<ScriptObject*> ExampleScriptContainer;
-    ExampleScriptContainer ExampleScripts;
-}
-
-// This is the global static registry of scripts.
-template<class TScript>
-class ScriptRegistry
-{
-public:
-    typedef std::map<uint32, TScript*> ScriptMap;
-    typedef typename ScriptMap::iterator ScriptMapIterator;
-
-    // The actual list of scripts. This will be accessed concurrently, so it must not be modified
-    // after server startup.
-    static ScriptMap ScriptPointerList;
-
-    static void AddScript(TScript* const script)
-    {
-        ASSERT(script);
-
-        // See if the script is using the same memory as another script. If this happens, it means that
-        // someone forgot to allocate new memory for a script.
-        for (ScriptMapIterator it = ScriptPointerList.begin(); it != ScriptPointerList.end(); ++it)
-        {
-            if (it->second == script)
-            {
-                SF_LOG_ERROR("scripts", "Script '%s' has same memory pointer as '%s'.",
-                    script->GetName().c_str(), it->second->GetName().c_str());
-
-                return;
-            }
-        }
-
-        if (script->IsDatabaseBound())
-        {
-            // Get an ID for the script. An ID only exists if it's a script that is assigned in the database
-            // through a script name (or similar).
-            uint32 id = sObjectMgr->GetScriptId(script->GetName().c_str());
-            if (id)
-            {
-                // Try to find an existing script.
-                bool existing = false;
-                for (ScriptMapIterator it = ScriptPointerList.begin(); it != ScriptPointerList.end(); ++it)
-                {
-                    // If the script names match...
-                    if (it->second->GetName() == script->GetName())
-                    {
-                        // ... It exists.
-                        existing = true;
-                        break;
-                    }
-                }
-
-                // If the script isn't assigned -> assign it!
-                if (!existing)
-                {
-                    ScriptPointerList[id] = script;
-                    sScriptMgr->IncrementScriptCount();
-                }
-                else
-                {
-                    // If the script is already assigned -> delete it!
-                    SF_LOG_ERROR("scripts", "Script '%s' already assigned with the same script name, so the script can't work.",
-                        script->GetName().c_str());
-
-                    ASSERT(false); // Error that should be fixed ASAP.
-                }
-            }
-            else
-            {
-                // The script uses a script name from database, but isn't assigned to anything.
-                if (script->GetName().find("example") == std::string::npos && script->GetName().find("Smart") == std::string::npos)
-                    SF_LOG_ERROR("sql.sql", "Script named '%s' does not have a script name assigned in database.",
-                        script->GetName().c_str());
-
-                // These scripts don't get stored anywhere so throw them into this to avoid leaking memory
-                ExampleScripts.insert(script);
-            }
-        }
-        else
-        {
-            // We're dealing with a code-only script; just add it.
-            ScriptPointerList[_scriptIdCounter++] = script;
-            sScriptMgr->IncrementScriptCount();
-        }
-    }
-
-    // Gets a script by its ID (assigned by ObjectMgr).
-    static TScript* GetScriptById(uint32 id)
-    {
-        ScriptMapIterator it = ScriptPointerList.find(id);
-        if (it != ScriptPointerList.end())
-            return it->second;
-
-        return NULL;
-    }
-
-private:
-    // Counter used for code-only scripts.
-    static uint32 _scriptIdCounter;
-};
-
 // Utility macros to refer to the script registry.
 #define SCR_REG_MAP(T) ScriptRegistry<T>::ScriptMap
 #define SCR_REG_ITR(T) ScriptRegistry<T>::ScriptMapIterator
@@ -156,6 +52,11 @@ private:
         return R;
 
 struct TSpellSummary* SpellSummary;
+
+PlayerbotScript::PlayerbotScript(const char* name) : ScriptObject(name)
+{
+    ScriptRegistry<PlayerbotScript>::AddScript(this);
+}
 
 ScriptMgr::ScriptMgr()
     : _scriptCount(0), _scheduledScripts(0) { }

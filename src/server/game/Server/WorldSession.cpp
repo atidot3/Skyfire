@@ -84,7 +84,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool hasBoost) :
+WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool hasBoost, bool isBot) :
     m_muteTime(mute_time),
     m_timeOutTime(0),
     AntiDOS(this),
@@ -111,6 +111,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
     recruiterId(recruiter),
     isRecruiter(isARecruiter),
     m_hasBoost(hasBoost),
+    m_isBot(isBot),
     timeLastWhoCommand(0),
     _RBACData(NULL)
 {
@@ -193,9 +194,6 @@ uint32 WorldSession::GetGuidLow() const
 /// Send a packet to the client
 void WorldSession::SendPacket(WorldPacket const* packet, bool forced /*= false*/)
 {
-    if (!m_Socket)
-        return;
-
     if (packet->GetOpcode() == NULL_OPCODE)
     {
         SF_LOG_ERROR("network.opcode", "Prevented sending of NULL_OPCODE to %s", GetPlayerInfo().c_str());
@@ -206,6 +204,11 @@ void WorldSession::SendPacket(WorldPacket const* packet, bool forced /*= false*/
         SF_LOG_ERROR("network.opcode", "Prevented sending of UNKNOWN_OPCODE to %s", GetPlayerInfo().c_str());
         return;
     }
+
+    sScriptMgr->OnPlayerbotPacketSent(GetPlayer(), packet);
+
+    if (!m_Socket)
+        return;
 
     if (!forced)
     {
@@ -286,6 +289,18 @@ void WorldSession::LogUnprocessedTail(WorldPacket* packet) const
     packet->print_storage();
 }
 
+bool WorldSession::HandleSocketClosed()
+{
+    if (m_Socket && m_Socket->IsClosed() && GetPlayer() && !PlayerLogout() && GetPlayer()->m_taxi.empty() && GetPlayer()->IsInWorld() && !World::IsStopped())
+    {
+        m_Socket = nullptr;
+        GetPlayer()->TradeCancel(false);
+        return true;
+    }
+
+    return false;
+}
+
 /// Update the WorldSession (triggered by World update)
 bool WorldSession::Update(uint32 diff, PacketFilter& updater)
 {
@@ -295,7 +310,7 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
 
     ///- Before we process anything:
     /// If necessary, kick the player from the character select screen
-    if (IsConnectionIdle())
+    if (IsConnectionIdle() && m_Socket)
         m_Socket->CloseSocket();
 
     ///- Retrieve packets from the receive queue and call the appropriate handlers
@@ -427,6 +442,7 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
         _warden->Update();
 
     ProcessQueryCallbacks();
+    sScriptMgr->OnPlayerbotUpdateSessions(GetPlayer());
 
     //check if we are safe to proceed with logout
     //logout procedure should happen only in World::UpdateSessions() method!!!
@@ -468,6 +484,8 @@ void WorldSession::LogoutPlayer(bool save)
     {
         if (uint64 lguid = _player->GetLootGUID())
             DoLootRelease(lguid);
+
+        sScriptMgr->OnPlayerbotLogout(_player);
 
         ///- If the player just died before logging out, make him appear as a ghost
         //FIXME: logout must be delayed in case lost connection with client in time of combat

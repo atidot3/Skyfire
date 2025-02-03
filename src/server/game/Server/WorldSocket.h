@@ -125,6 +125,7 @@ public:
     /// Called by WorldSocketMgr/ReactorRunnable.
     int Update(void);
 
+    WorldSession* GetSession();
 private:
     /// Helper functions for processing incoming data.
     int handle_input_header(void);

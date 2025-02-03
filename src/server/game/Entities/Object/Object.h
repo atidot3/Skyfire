@@ -328,7 +328,7 @@ struct Position
     float GetPositionY() const { return m_positionY; }
     float GetPositionZ() const { return m_positionZ; }
     float GetOrientation() const { return m_orientation; }
-
+    Position GetPosition() { return *this; };
     void GetPosition(float& x, float& y) const
     {
         x = m_positionX; y = m_positionY;

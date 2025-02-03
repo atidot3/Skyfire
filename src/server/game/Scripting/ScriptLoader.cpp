@@ -1275,6 +1275,7 @@ void AddNorthrendScripts()
 #endif
 }
 
+extern void AddModulesScripts();
 
 void AddMaelstromScripts()
 {
@@ -1342,6 +1343,6 @@ void AddCustomScripts()
 {
 #ifdef SCRIPTS
     /* This is where custom scripts should be added. */
-
+    AddModulesScripts();
 #endif
 }

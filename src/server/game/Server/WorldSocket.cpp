@@ -110,6 +110,11 @@ WorldSocket::~WorldSocket(void)
     peer().close();
 }
 
+WorldSession* WorldSocket::GetSession()
+{
+    return m_Session;
+}
+
 bool WorldSocket::IsClosed(void) const
 {
     return closing_;

@@ -12,6 +12,7 @@
 
 #include "DBCStores.h"
 #include "SharedDefines.h"
+#include "ObjectMgr.h"
 #include "Weather.h"
 #include "World.h"
 
@@ -760,6 +761,25 @@ public:
     virtual void OnDisband(Group* /*group*/) { }
 };
 
+class PlayerbotScript : public ScriptObject
+{
+protected:
+
+    PlayerbotScript(const char* name);
+
+public:
+    bool IsDatabaseBound() const { return false; }
+
+    virtual void OnPlayerbotCheckKillTask(Player* /*player*/, Unit* /*victim*/) { }
+    virtual void OnPlayerbotCheckPetitionAccount(Player* /*player*/, bool& /*found*/) { }
+    [[nodiscard]] virtual bool OnPlayerbotCheckUpdatesToSend(Player* /*player*/) { return true; }
+    virtual void OnPlayerbotPacketSent(Player* /*player*/, WorldPacket const* /*packet*/) { }
+    virtual void OnPlayerbotUpdate(uint32 /*diff*/) { }
+    virtual void OnPlayerbotUpdateSessions(Player* /*player*/) { }
+    virtual void OnPlayerbotLogout(Player* /*player*/) { }
+    virtual void OnPlayerbotLogoutBots() { }
+};
+
 // Placed here due to ScriptRegistry::AddScript dependency.
 #define sScriptMgr ACE_Singleton<ScriptMgr, ACE_Null_Mutex>::instance()
 
@@ -974,6 +994,15 @@ public: /* Initialization */
     uint32 DecreaseScheduledScriptCount(size_t count) { return _scheduledScripts -= count; }
     bool IsScriptScheduled() const { return _scheduledScripts > 0; }
 
+public: /* PlayerbotScript */
+    void OnPlayerbotCheckKillTask(Player* player, Unit* victim);
+    void OnPlayerbotCheckPetitionAccount(Player* player, bool& found);
+    bool OnPlayerbotCheckUpdatesToSend(Player* player);
+    void OnPlayerbotPacketSent(Player* player, WorldPacket const* packet);
+    void OnPlayerbotUpdate(uint32 diff);
+    void OnPlayerbotUpdateSessions(Player* player);
+    void OnPlayerbotLogout(Player* player);
+    void OnPlayerbotLogoutBots();
 private:
     uint32 _scriptCount;
 
@@ -1036,5 +1065,109 @@ public:
     GameObjectAI* GetAI(GameObject* go) const override { return new AI(go); }
 };
 #define RegisterGameObjectAI(ai_name) new GenericGameObjectScript<ai_name>(#ai_name)
+
+namespace
+{
+    typedef std::set<ScriptObject*> ExampleScriptContainer;
+    ExampleScriptContainer ExampleScripts;
+}
+// This is the global static registry of scripts.
+template<class TScript>
+class ScriptRegistry
+{
+public:
+    typedef std::map<uint32, TScript*> ScriptMap;
+    typedef typename ScriptMap::iterator ScriptMapIterator;
+
+    // The actual list of scripts. This will be accessed concurrently, so it must not be modified
+    // after server startup.
+    static ScriptMap ScriptPointerList;
+
+    static void AddScript(TScript* const script)
+    {
+        ASSERT(script);
+
+        // See if the script is using the same memory as another script. If this happens, it means that
+        // someone forgot to allocate new memory for a script.
+        for (ScriptMapIterator it = ScriptPointerList.begin(); it != ScriptPointerList.end(); ++it)
+        {
+            if (it->second == script)
+            {
+                SF_LOG_ERROR("scripts", "Script '%s' has same memory pointer as '%s'.",
+                    script->GetName().c_str(), it->second->GetName().c_str());
+
+                return;
+            }
+        }
+
+        if (script->IsDatabaseBound())
+        {
+            // Get an ID for the script. An ID only exists if it's a script that is assigned in the database
+            // through a script name (or similar).
+            uint32 id = sObjectMgr->GetScriptId(script->GetName().c_str());
+            if (id)
+            {
+                // Try to find an existing script.
+                bool existing = false;
+                for (ScriptMapIterator it = ScriptPointerList.begin(); it != ScriptPointerList.end(); ++it)
+                {
+                    // If the script names match...
+                    if (it->second->GetName() == script->GetName())
+                    {
+                        // ... It exists.
+                        existing = true;
+                        break;
+                    }
+                }
+
+                // If the script isn't assigned -> assign it!
+                if (!existing)
+                {
+                    ScriptPointerList[id] = script;
+                    sScriptMgr->IncrementScriptCount();
+                }
+                else
+                {
+                    // If the script is already assigned -> delete it!
+                    SF_LOG_ERROR("scripts", "Script '%s' already assigned with the same script name, so the script can't work.",
+                        script->GetName().c_str());
+
+                    ASSERT(false); // Error that should be fixed ASAP.
+                }
+            }
+            else
+            {
+                // The script uses a script name from database, but isn't assigned to anything.
+                if (script->GetName().find("example") == std::string::npos && script->GetName().find("Smart") == std::string::npos)
+                    SF_LOG_ERROR("sql.sql", "Script named '%s' does not have a script name assigned in database.",
+                        script->GetName().c_str());
+
+                // These scripts don't get stored anywhere so throw them into this to avoid leaking memory
+                ExampleScripts.insert(script);
+            }
+        }
+        else
+        {
+            // We're dealing with a code-only script; just add it.
+            ScriptPointerList[_scriptIdCounter++] = script;
+            sScriptMgr->IncrementScriptCount();
+        }
+    }
+
+    // Gets a script by its ID (assigned by ObjectMgr).
+    static TScript* GetScriptById(uint32 id)
+    {
+        ScriptMapIterator it = ScriptPointerList.find(id);
+        if (it != ScriptPointerList.end())
+            return it->second;
+
+        return NULL;
+    }
+
+private:
+    // Counter used for code-only scripts.
+    static uint32 _scriptIdCounter;
+};
+
 
 #endif
