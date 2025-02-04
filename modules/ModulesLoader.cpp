@@ -13,7 +13,7 @@ void AddSC_mod_playerbots();
 void AddModulesScripts()
 {
     // Modules
-    AddSC_mod_exemple();
-AddSC_mod_playerbots();
+        AddSC_mod_exemple();
+    AddSC_mod_playerbots();
 
 }

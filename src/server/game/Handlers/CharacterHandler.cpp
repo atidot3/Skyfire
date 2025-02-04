@@ -928,6 +928,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     // "GetAccountId() == db stored account id" checked in LoadFromDB (prevent login not own character using cheating tools)
     if (!pCurrChar->LoadFromDB(GUID_LOPART(playerGuid), holder))
     {
+        SF_LOG_FATAL("playerbots", "Bot player could not be loaded for GUID ID: %u", playerGuid);
         SetPlayer(NULL);
         KickPlayer();                                       // disconnect client, player no set to session and it will not deleted or saved at kick
         delete pCurrChar;                                   // delete it manually

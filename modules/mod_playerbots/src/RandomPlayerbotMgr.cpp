@@ -61,27 +61,30 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
     }
 
     GetBots();
+    std::list<uint64> availableBots = _currentBots;
     uint32 availableBotCount = _currentBots.size();
     uint32 onlineBotCount = playerBots.size();
+
+    uint32 onlineBotFocus = 75;
+    if (onlineBotCount < (uint32)(sPlayerbotAIConfig->minRandomBots * 90 / 100))
+        onlineBotFocus = 25;
+
+    uint32 updateIntervalTurboBoost = _isBotInitializing ? 1 : sPlayerbotAIConfig->randomBotUpdateInterval;
+    SetNextCheckDelay(updateIntervalTurboBoost * (onlineBotFocus + 25) * 10);
 
     if (availableBotCount < maxAllowedBotCount)
     {
         AddRandomBots();
     }
 
-    uint32 onlineBotFocus = 75;
-    uint32 minThreshold = static_cast<uint32>((sPlayerbotAIConfig->minRandomBots * 90) / 100);
-    if (onlineBotFocus < minThreshold)
-        onlineBotFocus = 25;
-
     uint32 updateBots = sPlayerbotAIConfig->randomBotsPerInterval * onlineBotFocus / 100;
     uint32 maxNewBots = onlineBotCount < maxAllowedBotCount ? maxAllowedBotCount - onlineBotCount : 0;
     uint32 loginBots = std::min(sPlayerbotAIConfig->randomBotsPerInterval - updateBots, maxNewBots);
 
-    if (!_currentBots.empty())
+    if (!availableBots.empty())
     {
         // Update bots
-        for (auto bot : _currentBots)
+        for (auto bot : availableBots)
         {
             if (!GetPlayerBot(bot))
                 continue;
@@ -103,7 +106,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
             SF_LOG_INFO("playerbots", "%d new bots", loginBots);
 
             // Log in bots
-            for (auto bot : _currentBots)
+            for (auto bot : availableBots)
             {
                 if (GetPlayerBot(bot))
                     continue;
@@ -115,6 +118,16 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
 
                 if (!loginBots)
                     break;
+            }
+        }
+        else if (loginBots && !botLoading.empty())
+        {
+            for (const auto chtr : _currentBots)
+            {
+                if (botLoading.find(chtr) != botLoading.end())
+                {
+                    SF_LOG_INFO("playerbots", "%d already defined in _currentBots", chtr);
+                }
             }
         }
     }
@@ -637,8 +650,8 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
 
 void RandomPlayerbotMgr::OnBotLoginInternal(Player* const bot)
 {
-    SF_LOG_INFO("playerbots", "%u/%u Bot %s logged in", playerBots.size(), sRandomPlayerbotMgr->GetMaxAllowedBotCount(),
-        bot->GetName().c_str());
+    auto maxAllowed = sRandomPlayerbotMgr->GetMaxAllowedBotCount();
+    SF_LOG_INFO("playerbots", "%u/%u Bot %s logged in", playerBots.size(), maxAllowed, bot->GetName().c_str());
 
     /*if (sPlayerbotAIConfig->randomBotFixedLevel)
     {

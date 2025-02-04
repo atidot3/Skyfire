@@ -21,47 +21,6 @@
 
 std::map<uint8, std::vector<uint8>> RandomPlayerbotFactory::availableRaces;
 
-constexpr RandomPlayerbotFactory::NameRaceAndGender RandomPlayerbotFactory::CombineRaceAndGender(uint8 gender,
-    uint8 race)
-{
-    switch (race)
-    {
-        case RACE_HUMAN:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::GenericMale) + gender);
-        case RACE_ORC:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::OrcMale) + gender);
-        case RACE_DWARF:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::DwarfMale) + gender);
-        case RACE_NIGHTELF:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::NightelfMale) + gender);
-        case RACE_UNDEAD_PLAYER:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::GenericMale) + gender);
-        case RACE_TAUREN:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::TaurenMale) + gender);
-        case RACE_GNOME:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::GnomeMale) + gender);
-        case RACE_TROLL:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::TrollMale) + gender);
-        case RACE_DRAENEI:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::DraeneiMale) + gender);
-        case RACE_BLOODELF:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::BloodelfMale) + gender);
-        case RACE_WORGEN:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::WorgenMale) + gender);
-        case RACE_GOBLIN:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::GoblinMale) + gender);
-        case RACE_PANDAREN_NEUTRAL:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::PandarenMale) + gender);
-        /*case RACE_PANDAREN_ALLIANCE:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::PandarenMale) + gender);
-        case RACE_PANDAREN_HORDE:
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::PandarenMale) + gender);*/
-        default:
-            SF_LOG_ERROR("playerbots", "The race with ID %u does not have a naming category", race);
-            return static_cast<NameRaceAndGender>(static_cast<uint8>(NameRaceAndGender::GenericMale) + gender);
-    }
-}
-
 RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(accountId)
 {
     uint32 const expansion = sWorld->getIntConfig(WorldIntConfigs::CONFIG_EXPANSION);
@@ -255,7 +214,7 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     }
     if (expansion >= EXPANSION_MISTS_OF_PANDARIA)
     {
-        availableRaces[CLASS_WARRIOR].push_back(RACE_PANDAREN_ALLIANCE);
+        /*availableRaces[CLASS_WARRIOR].push_back(RACE_PANDAREN_ALLIANCE);
         availableRaces[CLASS_WARRIOR].push_back(RACE_PANDAREN_HORDE);
 
         availableRaces[CLASS_HUNTER].push_back(RACE_PANDAREN_ALLIANCE);
@@ -271,8 +230,15 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
         availableRaces[CLASS_MAGE].push_back(RACE_PANDAREN_HORDE);
 
         availableRaces[CLASS_SHAMAN].push_back(RACE_PANDAREN_ALLIANCE);
-        availableRaces[CLASS_SHAMAN].push_back(RACE_PANDAREN_HORDE);
+        availableRaces[CLASS_SHAMAN].push_back(RACE_PANDAREN_HORDE);*/
 
+        availableRaces[CLASS_WARRIOR].push_back(RACE_PANDAREN_NEUTRAL);
+        availableRaces[CLASS_HUNTER].push_back(RACE_PANDAREN_NEUTRAL);
+        availableRaces[CLASS_ROGUE].push_back(RACE_PANDAREN_NEUTRAL);
+        availableRaces[CLASS_PRIEST].push_back(RACE_PANDAREN_NEUTRAL);
+        availableRaces[CLASS_MAGE].push_back(RACE_PANDAREN_NEUTRAL);
+        availableRaces[CLASS_SHAMAN].push_back(RACE_PANDAREN_NEUTRAL);
+        availableRaces[CLASS_MONK].push_back(RACE_PANDAREN_NEUTRAL);
         // monk
         // alliance
         {
@@ -282,21 +248,21 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
             availableRaces[CLASS_MONK].push_back(RACE_GNOME);
             availableRaces[CLASS_MONK].push_back(RACE_DRAENEI);
             availableRaces[CLASS_MONK].push_back(RACE_BLOODELF);
-            availableRaces[CLASS_MONK].push_back(RACE_PANDAREN_ALLIANCE);
+            //availableRaces[CLASS_MONK].push_back(RACE_PANDAREN_ALLIANCE);
         }
         // horde
         {
-            availableRaces[CLASS_MONK].push_back(RACE_PANDAREN_HORDE);
             availableRaces[CLASS_MONK].push_back(RACE_ORC);
             availableRaces[CLASS_MONK].push_back(RACE_UNDEAD_PLAYER);
             availableRaces[CLASS_MONK].push_back(RACE_TROLL);
             availableRaces[CLASS_MONK].push_back(RACE_TAUREN);
             availableRaces[CLASS_MONK].push_back(RACE_BLOODELF);
+            //availableRaces[CLASS_MONK].push_back(RACE_PANDAREN_HORDE);
         }
     }
 }
 
-Player* RandomPlayerbotFactory::CreateRandomBot(WorldSession* session, Classes cls, std::unordered_map<NameRaceAndGender, std::vector<std::string>>& nameCache)
+Player* RandomPlayerbotFactory::CreateRandomBot(WorldSession* session, Classes cls, std::unordered_map<Gender, std::vector<std::string>>& nameCache)
 {
     SF_LOG_DEBUG("playerbots", "Creating new random bot for class %s", ClassToString(cls).c_str());
 
@@ -318,24 +284,22 @@ Player* RandomPlayerbotFactory::CreateRandomBot(WorldSession* session, Classes c
     }
 
     uint8 race = raceOptions[std::rand() % raceOptions.size()];
-    const auto raceAndGender = CombineRaceAndGender(gender, race);
-
     std::string name;
     if (nameCache.empty())
     {
-        name = CreateRandomBotName(raceAndGender);
+        name = CreateRandomBotName((Gender)gender);
     }
     else
     {
-        if (nameCache[raceAndGender].empty())
+        if (nameCache[(Gender)gender].empty())
         {
-            SF_LOG_ERROR("playerbots", "No name found for race and gender: %u", raceAndGender);
+            SF_LOG_ERROR("playerbots", "No name found for race and gender: %u %s %u", gender, RaceToString((Races)race).c_str(), gender);
             return nullptr;
         }
-        uint32 i = std::rand() % nameCache[raceAndGender].size();
-        name = nameCache[raceAndGender][i];
-        swap(nameCache[raceAndGender][i], nameCache[raceAndGender].back());
-        nameCache[raceAndGender].pop_back();
+        uint32 i = std::rand() % nameCache[(Gender)gender].size();
+        name = nameCache[(Gender)gender][i];
+        swap(nameCache[(Gender)gender][i], nameCache[(Gender)gender].back());
+        nameCache[(Gender)gender].pop_back();
     }
     if (name.empty())
     {
@@ -407,7 +371,7 @@ Player* RandomPlayerbotFactory::CreateRandomBot(WorldSession* session, Classes c
     return player;
 }
 
-std::string const RandomPlayerbotFactory::CreateRandomBotName(NameRaceAndGender raceAndGender)
+std::string const RandomPlayerbotFactory::CreateRandomBotName(Gender gender)
 {
     std::string botName = "";
     int tries = 3;
@@ -419,7 +383,7 @@ std::string const RandomPlayerbotFactory::CreateRandomBotName(NameRaceAndGender 
             "LEFT OUTER JOIN characters c ON c.name = n.name "
             "WHERE c.guid IS NULL and n.gender = '%d' "
             "ORDER BY RAND() LIMIT 1",
-            static_cast<uint8>(raceAndGender));
+            (uint8)gender);
         if (!result)
         {
             SF_LOG_ERROR("playerbots", "Failed to query database to get bot names.");
@@ -448,8 +412,6 @@ std::string const RandomPlayerbotFactory::CreateRandomBotName(NameRaceAndGender 
     const std::string replaceRule[2][17] = {
         {"ST", "ka", "ko", "ku", "kr", "S", "T", "C", "N", "jj", "AA", "AI", "A", "E", "O", "I", "aa"},
         {"sth", "ca", "co", "cu", "cr", "sh", "th", "ch", "ng", "dg", "A", "ayu", "ai", "ei", "ou", "iu", "ae"} };
-
-    const auto gender = static_cast<uint8>(raceAndGender) % 2;
 
     tries = 10;
     while (--tries)
@@ -522,7 +484,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
 {
     SF_LOG_INFO("playerbots", "Creating random bot accounts...");
 
-    std::unordered_map<NameRaceAndGender, std::vector<std::string>> nameCache;
+    std::unordered_map<Gender, std::vector<std::string>> nameCache;
     uint32 totalAccCount = sPlayerbotAIConfig->randomBotAccountCount;
     std::vector<std::future<void>> account_creations;
     int account_creation = 0;
@@ -538,10 +500,10 @@ void RandomPlayerbotFactory::CreateRandomBots()
     {
         Field* fields = result->Fetch();
         std::string name = fields[0].GetString();
-        NameRaceAndGender raceAndGender = static_cast<NameRaceAndGender>(fields[1].GetUInt8());
+        Gender gender = static_cast<Gender>(fields[1].GetUInt8());
         const auto name_result = sObjectMgr->CheckPlayerName(name);
         if (name_result == ResponseCodes::CHAR_NAME_SUCCESS)
-            nameCache[raceAndGender].push_back(name);
+            nameCache[gender].push_back(name);
         else
         {
             SF_LOG_ERROR("playerbots", "sObjectMgr->CheckPlayerName %u", (uint32)name_result);
@@ -613,12 +575,12 @@ void RandomPlayerbotFactory::CreateRandomBots()
         {
             continue;
         }
-        SF_LOG_INFO("playerbots", "Creating random bot characters for account: [%u/%u]", accountNumber + 1,
-            sPlayerbotAIConfig->randomBotAccountCount);
+        SF_LOG_INFO("playerbots", "Creating random bot characters for account: [%u/%u]", accountNumber + 1, sPlayerbotAIConfig->randomBotAccountCount);
         RandomPlayerbotFactory factory(accountId);
 
         WorldSession* session = new WorldSession(accountId, nullptr, AccountTypes::SEC_PLAYER, EXPANSION_MISTS_OF_PANDARIA,
             time_t(0), LOCALE_enUS, 0, false, false, true);
+        session->SetVirtualRealmID(1);
         sessionBots.push_back(session);
 
         for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES - character_count; ++cls)

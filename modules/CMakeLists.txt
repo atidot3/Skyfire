@@ -3,15 +3,28 @@ set(MODULES_LOADER_TEMP "${CMAKE_BINARY_DIR}/ModulesLoader.cpp")
 set(MODULES_LOADER_FINAL "${CMAKE_SOURCE_DIR}/modules/ModulesLoader.cpp")
 set(MODULES_LOADER_TEMPLATE "${CMAKE_SOURCE_DIR}/modules/ModulesLoader.cpp.in.cmake")
 
-# Détection automatique des modules
-file(GLOB MODULE_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
+# Fonction pour récupérer tous les sous-dossiers d'un répertoire donné
+function(get_subdirectories result curdir)
+    file(GLOB children LIST_DIRECTORIES true ${curdir}/*)
+    set(subdirs "")
+    foreach(child ${children})
+        if(IS_DIRECTORY ${child})
+            get_filename_component(folder_name ${child} NAME)
+            list(APPEND subdirs ${folder_name})
+        endif()
+    endforeach()
+    set(${result} ${subdirs} PARENT_SCOPE)
+endfunction()
+
+# Détection automatique des modules (tous les sous-dossiers de modules/)
+get_subdirectories(MODULE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Détecter les modules valides
 set(VALID_MODULES "")
 foreach(MODULE ${MODULE_DIRS})
     if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
-        # Vérifie qu'il contient un dossier "src" avec au moins un fichier .cpp
-        file(GLOB MODULE_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/src/*.cpp")
+        # Vérifie qu'il contient des fichiers .cpp ou .h
+        file(GLOB_RECURSE MODULE_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/*.h")
         if(MODULE_SRC_FILES)
             list(APPEND VALID_MODULES ${MODULE})
         endif()
@@ -26,36 +39,30 @@ foreach(MODULE ${VALID_MODULES})
     string(REPLACE "-" "_" MODULE_FUNC_NAME ${MODULE})
 
     # Récupération des fichiers source du module
-    file(GLOB MODULE_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/src/*.h")
+    file(GLOB_RECURSE MODULE_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/*.h")
     list(APPEND MODULES_SOURCES ${MODULE_SRC_FILES})
 
-    # Créer un groupe Visual Studio pour le module
-    source_group("${MODULE}" FILES ${MODULE_SRC_FILES})
+    # Créer un groupe Visual Studio reflétant l'arborescence des fichiers
+    foreach(SRC_FILE ${MODULE_SRC_FILES})
+        get_filename_component(SRC_PATH ${SRC_FILE} DIRECTORY)
+        file(RELATIVE_PATH REL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${SRC_PATH})
+        source_group(${REL_PATH} FILES ${SRC_FILE})
+    endforeach()
 endforeach()
 
 set(MODULES_INCLUDES "")
 set(MODULES_DECLARATIONS "")
 set(MODULES_CALLS "")
-set(MODULE_SOURCES "")
 
-foreach(MODULE ${MODULE_DIRS})
-    if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
-        string(REPLACE "-" "_" MODULE_FUNC_NAME ${MODULE})
+foreach(MODULE ${VALID_MODULES})
+    string(REPLACE "-" "_" MODULE_FUNC_NAME ${MODULE})
 
-        message("Is directory ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}")
-        # Ajout des includes des modules
-        set(MODULES_INCLUDES "${MODULES_INCLUDES}void AddSC_${MODULE_FUNC_NAME}();\n")
+    # Ajout des includes des modules
+    set(MODULES_INCLUDES "${MODULES_INCLUDES}void AddSC_${MODULE_FUNC_NAME}();\n")
 
-        # Ajout des déclarations et appels pour ModulesLoader.cpp
-        set(MODULES_DECLARATIONS "${MODULES_DECLARATIONS}void AddSC_${MODULE_FUNC_NAME}();\n")
-        set(MODULES_CALLS "${MODULES_CALLS}AddSC_${MODULE_FUNC_NAME}();\n")
-
-        # Récupération des fichiers source du module
-        file(GLOB MODULE_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}/src/*.h")
-        list(APPEND MODULE_SOURCES ${MODULE_SRC_FILES})
-
-        message("Sources ${MODULE_SRC_FILES}")
-    endif()
+    # Ajout des déclarations et appels pour ModulesLoader.cpp
+    set(MODULES_DECLARATIONS "${MODULES_DECLARATIONS}void AddSC_${MODULE_FUNC_NAME}();\n")
+    set(MODULES_CALLS "${MODULES_CALLS}    AddSC_${MODULE_FUNC_NAME}();\n")
 endforeach()
 
 # Génération temporaire du fichier ModulesLoader.cpp
@@ -76,6 +83,7 @@ source_group("ModulesLoader" FILES ${MODULES_LOADER_FILES})
 message(STATUS "ModulesLoader.cpp: ${MODULES_LOADER_FINAL}")
 message(STATUS "ModulesLoader.h: ${CMAKE_SOURCE_DIR}/modules/ModulesLoader.h")
 message(STATUS "Final MODULES_SOURCES: ${MODULES_SOURCES}")
+
 # Création de la bibliothèque statique "modules"
 add_library(modules STATIC ${MODULES_SOURCES})
 

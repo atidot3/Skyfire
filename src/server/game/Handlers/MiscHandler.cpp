@@ -1719,8 +1719,8 @@ void WorldSession::HandleTimeSyncResp(WorldPacket& recvData)
     uint32 counter, clientTicks;
     recvData >> counter >> clientTicks;
 
-    if (counter != _player->m_timeSyncQueue.front())
-        SF_LOG_ERROR("network", "Wrong time sync counter from player %s (cheater?)", _player->GetName().c_str());
+    //if (counter != _player->m_timeSyncQueue.front())
+        //SF_LOG_ERROR("network", "Wrong time sync counter from player %s (cheater?)", _player->GetName().c_str());
 
     SF_LOG_DEBUG("network", "Time sync received: counter %u, client ticks %u, time since last sync %u", counter, clientTicks, clientTicks - _player->m_timeSyncClient);
 

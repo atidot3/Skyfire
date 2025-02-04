@@ -36,7 +36,9 @@ private:
 
 public:
     PlayerbotLoginQueryHolder(PlayerbotHolder* playerbotHolder, uint32 masterAccount, uint32 accountId, uint64 guid)
-        : LoginQueryHolder(accountId, guid), masterAccountId(masterAccount), playerbotHolder(playerbotHolder)
+        : LoginQueryHolder(accountId, guid)
+        , masterAccountId(masterAccount)
+        , playerbotHolder(playerbotHolder)
     {
     }
 
@@ -105,7 +107,6 @@ void PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
     QueryResultHolderFuture charLoginCallback = CharacterDatabase.DelayQueryHolder((SQLQueryHolder*)holder);
     SQLQueryHolder* param;
     charLoginCallback.get(param);
-    SF_LOG_DEBUG("playerbots", "Bot call HandlePlayerBotLoginCallback");
     HandlePlayerBotLoginCallback((PlayerbotLoginQueryHolder*)param);
     charLoginCallback.cancel();
 }
@@ -113,6 +114,7 @@ void PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
 void PlayerbotHolder::HandlePlayerBotLoginCallback(PlayerbotLoginQueryHolder* holder)
 {
     uint32 botAccountId = holder->GetAccountId();
+    uint64 botGUID = holder->GetGuid();
 
     // At login DBC locale should be what the server is set to use by default (as spells etc are hardcoded to ENUS this
     // allows channels to work as intended)
@@ -127,7 +129,7 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(PlayerbotLoginQueryHolder* ho
         SF_LOG_DEBUG("playerbots", "Bot player could not be loaded for account ID: %u", botAccountId);
         botSession->LogoutPlayer(true);
         delete botSession;
-        botLoading.erase(holder->GetGuid());
+        botLoading.erase(botGUID);
         return;
     }
 
@@ -197,7 +199,8 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(PlayerbotLoginQueryHolder* ho
         botSession->LogoutPlayer(true);
         delete botSession;
     }
-    botLoading.erase(holder->GetGuid());
+
+    botLoading.erase(botGUID);
 }
 
 void PlayerbotHolder::UpdateSessions()
@@ -457,7 +460,7 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
     if (!botAI)
     {
         // Log a warning here to indicate that the botAI is null
-        SF_LOG_DEBUG("playerbots", "PlayerbotAI is null for bot with GUID: %u", bot->GetGUID());
+        //SF_LOG_DEBUG("playerbots", "PlayerbotAI is null for bot with GUID: %u", bot->GetGUID());
         return;
     }
 
@@ -465,7 +468,7 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
     if (!master)
     {
         // Log a warning to indicate that the master is null
-        SF_LOG_DEBUG("playerbots", "Master is null for bot with GUID: %u", bot->GetGUID());
+        //SF_LOG_DEBUG("playerbots", "Master is null for bot with GUID: %u", bot->GetGUID());
         return;
     }
 
