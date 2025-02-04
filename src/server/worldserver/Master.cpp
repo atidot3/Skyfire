@@ -532,6 +532,14 @@ bool Master::_StartDB()
     //TODO: FIX ME revision
     //WorldDatabase.PExecute("UPDATE version SET core_version = '%s', core_revision = '%s'", _FULLVERSION, _HASH);        // One-time query
 
+    ///- Initialise the login database
+    dbString = sConfigMgr->GetStringDefault("PlayerbotDatabaseInfo", "");
+    if (!PlayerbotsDatabase.Open(dbString, asyncThreads, synchThreads))
+    {
+        SF_LOG_ERROR("server.worldserver", "Cannot connect to playerbot database %s", dbString.c_str());
+        return false;
+    }
+
     sWorld->LoadDBVersion();
 
     SF_LOG_INFO("server.worldserver", "Using World DB: %s", sWorld->GetDBVersion());
@@ -543,6 +551,7 @@ void Master::_StopDB()
     CharacterDatabase.Close();
     WorldDatabase.Close();
     LoginDatabase.Close();
+    PlayerbotsDatabase.Close();
 
     MySQL::Library_End();
 }

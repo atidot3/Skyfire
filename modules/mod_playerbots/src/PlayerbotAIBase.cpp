@@ -4,6 +4,7 @@
  */
 
 #include "PlayerbotAIBase.h"
+#include "PlayerbotAIConfig.h"
 
 PlayerbotAIBase::PlayerbotAIBase(bool isBotAI)
     : nextAICheckDelay(0)
@@ -31,7 +32,7 @@ void PlayerbotAIBase::SetNextCheckDelay(uint32 const delay)
 
     nextAICheckDelay = delay;
 
-    // if (nextAICheckDelay > sPlayerbotAIConfig->globalCoolDown)
+    //if (nextAICheckDelay > sPlayerbotAIConfig->globalCoolDown)
     // LOG_DEBUG("playerbots",  "std::set next check delay: {}", nextAICheckDelay);
 }
 
@@ -51,6 +52,6 @@ void PlayerbotAIBase::YieldThread(uint32 delay)
         nextAICheckDelay = delay;
 }
 
-bool PlayerbotAIBase::IsActive() { return nextAICheckDelay < /*sPlayerbotAIConfig->maxWaitForMove*/ 500; }
+bool PlayerbotAIBase::IsActive() { return nextAICheckDelay < sPlayerbotAIConfig->maxWaitForMove; }
 
 bool PlayerbotAIBase::IsBotAI() const { return _isBotAI; }

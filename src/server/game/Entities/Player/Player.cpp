@@ -1397,6 +1397,8 @@ void Player::Update(uint32 p_time)
     if (!IsInWorld())
         return;
 
+    sScriptMgr->OnPlayerBeforeUpdate(this, p_time);
+
     if (inCinematic && cinematicSequence)
     {
         bool startedAtClient = getMSTime() > cinematicClientStartTime;
@@ -1640,6 +1642,8 @@ void Player::Update(uint32 p_time)
             m_timeSyncTimer -= p_time;
     }
 
+    sScriptMgr->OnPlayerUpdate(this, p_time);
+
     if (IsAlive())
     {
         m_regenTimer += p_time;
@@ -1741,6 +1745,8 @@ void Player::Update(uint32 p_time)
     //because we don't want player's ghost teleported from graveyard
     if (IsHasDelayedTeleport() && IsAlive())
         TeleportTo(m_teleport_dest, m_teleport_options);
+
+    sScriptMgr->OnPlayerAfterUpdate(this, p_time);
 }
 
 void Player::setDeathState(DeathState s)

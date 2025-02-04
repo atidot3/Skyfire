@@ -68,8 +68,8 @@ public:
     virtual ~PlayerbotMgr();
 
     static bool HandlePlayerbotMgrCommand(ChatHandler* handler, char const* args);
-    void HandleMasterIncomingPacket(WorldPacket const& packet);
-    void HandleMasterOutgoingPacket(WorldPacket const& packet);
+    void HandleMasterIncomingPacket(WorldPacket const* packet);
+    void HandleMasterOutgoingPacket(WorldPacket const* packet);
     void HandleCommand(uint32 type, std::string const text);
     void OnPlayerLogin(Player* player);
     void CancelLogout();

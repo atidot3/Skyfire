@@ -40,6 +40,7 @@ public:
     std::string GetStringDefault(const char* name, const std::string& def);
     bool GetBoolDefault(const char* name, bool def);
     int GetIntDefault(const char* name, int def);
+    uint32_t GetUint32(const char* name, int def);
     float GetFloatDefault(const char* name, float def);
 
     std::string const& GetFilename();

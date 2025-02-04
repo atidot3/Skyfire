@@ -33,9 +33,9 @@ public:
     void UpdateAI(uint32 elapsed, bool minimal = false) override;
     void UpdateAIInternal(uint32 elapsed, bool minimal = false) override;
 
-    void HandleBotOutgoingPacket(WorldPacket const& packet);
-    void HandleMasterIncomingPacket(WorldPacket const& packet);
-    void HandleMasterOutgoingPacket(WorldPacket const& packet);
+    void HandleBotOutgoingPacket(WorldPacket const* packet);
+    void HandleMasterIncomingPacket(WorldPacket const* packet);
+    void HandleMasterOutgoingPacket(WorldPacket const* packet);
     void HandleTeleportAck();
     
 

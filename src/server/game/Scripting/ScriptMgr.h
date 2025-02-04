@@ -694,6 +694,11 @@ public:
 
     // Called when a player changes to a new map (after moving to new map)
     virtual void OnMapChanged(Player* /*player*/) { }
+
+    // Called for player::update
+    virtual void OnBeforeUpdate(Player* /*player*/, uint32 /*p_time*/) { }
+    virtual void OnUpdate(Player* /*player*/, uint32 /*p_time*/) {}
+    virtual void OnAfterUpdate(Player* /*player*/, uint32 /*diff*/) {}
 };
 
 class GuildScript : public ScriptObject
@@ -959,6 +964,9 @@ public: /* Initialization */
     void OnPlayerSave(Player* player);
     void OnPlayerBindToInstance(Player* player, DifficultyID difficulty, uint32 mapid, bool permanent);
     void OnPlayerUpdateZone(Player* player, uint32 newZone, uint32 newArea);
+    void OnPlayerBeforeUpdate(Player* player, uint32 p_time);
+    void OnPlayerUpdate(Player* player, uint32 p_time);
+    void OnPlayerAfterUpdate(Player* player, uint32 diff);
 
     /* GuildScript */
     void OnGuildAddMember(Guild* guild, Player* player, uint8& plRank);

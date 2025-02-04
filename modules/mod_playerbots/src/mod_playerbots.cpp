@@ -13,14 +13,18 @@
 #include "WorldPacket.h"
 #include "Log.h"
 #include "CharacterHandler.h"
-
 #include "Authentication/AuthCrypt.h"
 #include "WorldSocket.h"
 
 #include "Playerbots.h"
+#include "PlayerbotAIConfig.h"
 #include "RandomPlayerbotMgr.h"
 
+#include <vector>
+#include <future>
 #include <unordered_set>
+#include <random>
+#include <thread>
 
 static const char* QUERY_ACCOUNT = "SELECT * FROM `account`";
 static const char* QUERY_CHARACTER = "SELECT * FROM `characters`";
@@ -52,65 +56,11 @@ public:
             SF_LOG_INFO("playerbots", " ");
             SF_LOG_INFO("playerbots", "Load Playerbots Config...");
 
-            
+            sPlayerbotAIConfig->Initialize();
 
             SF_LOG_INFO("playerbots", ">> Loaded playerbots config in %u ms", GetMSTimeDiffToNow(oldMSTime));
             SF_LOG_INFO("playerbots", " ");
         }
-    }
-
-    void LogPlayer()
-    {
-        std::list<uint32> characters_entry;
-        QueryResult result = LoginDatabase.PQuery(QUERY_ACCOUNT, "");
-        if (!result.get())
-        {
-            SF_LOG_INFO("playerbots", "Fetch database auth failed on get bots account");
-            return;
-        }
-        do
-        {
-            Field* fields = result.get()->Fetch();
-
-            auto account = fields[0].GetUInt32();
-            auto username = fields[1].GetString();
-
-            SF_LOG_INFO("playerbots", "Account found id: %u [%s]", account, username);
-
-            if (username.contains("RNDBOT"))
-            {
-                SF_LOG_INFO("playerbots", "Bot account found id: %u", account);
-                QueryResult result = CharacterDatabase.PQuery(QUERY_CHARACTER, account);
-                if (!result.get())
-                {
-                    SF_LOG_INFO("playerbots", "Fetch database characters failed on get bots characters");
-                    return;
-                }
-                do
-                {
-                    Field* field = result.get()->Fetch();
-
-                    auto guid = field[0].GetUInt32();
-                    auto accountid = field[2].GetUInt32();
-
-                    SF_LOG_INFO("playerbots", "characters found guid: %u accountid: %u", guid, accountid);
-
-                    if (accountid == account)
-                    {
-                        characters_entry.push_back(accountid);
-                        sRandomPlayerbotMgr->AddPlayerBot(guid, 0);
-                    }
-                } while (result.get()->NextRow());
-
-            }
-        } while (result.get()->NextRow());
-        SF_LOG_INFO("playerbots", "Found bot characters: %u", characters_entry.size());
-    }
-
-    void OnStartup() override
-    {
-        SF_LOG_INFO("playerbots", "Playerbots OnStartup...");
-        LogPlayer();
     }
 };
 
@@ -118,18 +68,14 @@ class PlayerbotsServerScript : public ServerScript
 {
 public:
     PlayerbotsServerScript() : ServerScript("PlayerbotsServerScript") {}
-    virtual void OnPacketReceive(WorldSocket* socket, WorldPacket& packet) override
+    void OnPacketReceive(WorldSocket* socket, WorldPacket& packet) override
     {
         WorldSession* sessionBot = socket->GetSession();
         if (sessionBot)
         {
             Player* playerBot = sessionBot->GetPlayer();
-            if (playerBot)
-            {
-                SF_LOG_INFO("playerbots", "Player: %s Received packet", playerBot->GetName().c_str());
-            }
             if (PlayerbotMgr* playerbotMgr = GET_PLAYERBOT_MGR(playerBot))
-                playerbotMgr->HandleMasterIncomingPacket(packet);
+                playerbotMgr->HandleMasterIncomingPacket(&packet);
         }
     }
 };
@@ -162,27 +108,14 @@ public:
         if (!player || !sRandomPlayerbotMgr->IsRandomBot(player))
             return;
         
-        SF_LOG_INFO("playerbots", "Player: %s Received packet %s", player->GetName().c_str(), GetOpcodeNameForLogging(packet->GetOpcode(), true).c_str());
-
-        if (packet->GetOpcode() == SMSG_TIME_SYNC_REQUEST)
-        {
-            WorldPacket p = *packet;
-            uint32 counter;
-            p >> counter;
-            uint32 clientTicks = time(NULL);
-            WorldPacket packet(CMSG_TIME_SYNC_RESPONSE);
-            packet.rpos(0);
-            packet << counter << clientTicks;
-
-            player->GetSession()->HandleTimeSyncResp(packet);
-        }
+        //SF_LOG_INFO("playerbots", "Player: %s Received packet %s", player->GetName().c_str(), GetOpcodeNameForLogging(packet->GetOpcode(), true).c_str());
         if (PlayerbotAI* botAI = GET_PLAYERBOT_AI(player))
         {
-            botAI->HandleBotOutgoingPacket(*packet);
+            botAI->HandleBotOutgoingPacket(packet);
         }
         if (PlayerbotMgr* playerbotMgr = GET_PLAYERBOT_MGR(player))
         {
-            playerbotMgr->HandleMasterOutgoingPacket(*packet);
+            playerbotMgr->HandleMasterOutgoingPacket(packet);
         }
     }
 
@@ -215,11 +148,48 @@ public:
 
     void OnPlayerbotLogoutBots() override { sRandomPlayerbotMgr->LogoutAllBots(); }
 };
+class PlayerbotsPlayerScript : public PlayerScript
+{
+public:
+    PlayerbotsPlayerScript() : PlayerScript("PlayerbotsPlayerScript") {}
 
+    void OnLogin(Player* player, bool /*firstLogin*/) override
+    {
+        if (!player->GetSession()->IsBot())
+        {
+            sPlayerbotsMgr->AddPlayerbotData(player, false);
+            sRandomPlayerbotMgr->OnPlayerLogin(player);
+
+            if (sPlayerbotAIConfig->enabled || sPlayerbotAIConfig->randomBotAutologin)
+            {
+                std::string roundedTime =
+                    std::to_string(std::ceil((sPlayerbotAIConfig->maxRandomBots * 0.11 / 60) * 10) / 10.0);
+                roundedTime = roundedTime.substr(0, roundedTime.find('.') + 2);
+
+                ChatHandler(player->GetSession()).SendSysMessage(std::string("Playerbots: bot initialization at server startup takes about '" + roundedTime + "' minutes.").c_str());
+            }
+        }
+    }
+
+    void OnAfterUpdate(Player* player, uint32 diff) override
+    {
+        if (PlayerbotAI* botAI = GET_PLAYERBOT_AI(player))
+        {
+            botAI->UpdateAI(diff);
+        }
+
+        if (PlayerbotMgr* playerbotMgr = GET_PLAYERBOT_MGR(player))
+        {
+            playerbotMgr->UpdateAI(diff);
+        }
+    }
+};
 void AddSC_mod_playerbots()
 {
     new mod_playerbots();
 
+    new PlayerbotsServerScript();
     new PlayerbotsWorldScript();
     new PlayerbotsScript();
+    new PlayerbotsPlayerScript();
 }

@@ -10,9 +10,12 @@
 #include <istream>
 #include <string>
 
+#include "Helper.h"
+#include "PlayerbotAIConfig.h"
 #include "ChannelMgr.h"
 #include "CharacterHandler.h"
 #include "Common.h"
+#include "Chat.h"
 #include "Define.h"
 #include "Group.h"
 #include "GroupMgr.h"
@@ -20,7 +23,6 @@
 #include "ObjectMgr.h"
 #include "Playerbots.h"
 #include "RandomPlayerbotMgr.h"
-#include "SharedDefines.h"
 #include "WorldSession.h"
 #include "ChannelMgr.h"
 #include "Log.h"
@@ -170,12 +172,12 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(PlayerbotLoginQueryHolder* ho
 
         uint32 count = mgr->GetPlayerbotsCount();
         uint32 cls_count = mgr->GetPlayerbotsCountByClass(bot->getClass());
-        if (count >= 5 /*sPlayerbotAIConfig->maxAddedBots*/)
+        if (count >= sPlayerbotAIConfig->maxAddedBots)
         {
             allowed = false;
             out << "Failure: You have added too many bots";
         }
-        else if (cls_count >= 5 /*sPlayerbotAIConfig->maxAddedBotsPerClass*/)
+        else if (cls_count >= sPlayerbotAIConfig->maxAddedBotsPerClass)
         {
             allowed = false;
             out << "Failure: You have added too many bots for this class";
@@ -652,9 +654,9 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const /*cmd*/, 
     return "unknown command";
 }
 
-bool PlayerbotMgr::HandlePlayerbotMgrCommand(ChatHandler* /*handler*/, char const* /*args*/)
+bool PlayerbotMgr::HandlePlayerbotMgrCommand(ChatHandler* handler, char const* args)
 {
-    /*if (!sPlayerbotAIConfig->enabled)
+    if (!sPlayerbotAIConfig->enabled)
     {
         handler->PSendSysMessage("|cffff0000Playerbot system is currently disabled!");
         return false;
@@ -683,7 +685,7 @@ bool PlayerbotMgr::HandlePlayerbotMgrCommand(ChatHandler* /*handler*/, char cons
     {
         handler->PSendSysMessage("{}", i->c_str());
     }
-    */
+
     return true;
 }
 
@@ -1213,7 +1215,7 @@ PlayerbotMgr::~PlayerbotMgr()
 
 void PlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
 {
-    SetNextCheckDelay(100/*sPlayerbotAIConfig->reactDelay*/);
+    SetNextCheckDelay(sPlayerbotAIConfig->reactDelay);
     CheckTellErrors(elapsed);
 }
 
@@ -1253,7 +1255,7 @@ void PlayerbotMgr::HandleCommand(uint32 type, std::string const text)
     }
 }
 
-void PlayerbotMgr::HandleMasterIncomingPacket(WorldPacket const& packet)
+void PlayerbotMgr::HandleMasterIncomingPacket(WorldPacket const* packet)
 {
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
@@ -1274,7 +1276,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(WorldPacket const& packet)
             botAI->HandleMasterIncomingPacket(packet);
     }
 
-    switch (packet.GetOpcode())
+    switch (packet->GetOpcode())
     {
         // if master is logging out, log out all bots
     case CMSG_LOGOUT_REQUEST:
@@ -1291,7 +1293,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(WorldPacket const& packet)
     }
 }
 
-void PlayerbotMgr::HandleMasterOutgoingPacket(WorldPacket const& packet)
+void PlayerbotMgr::HandleMasterOutgoingPacket(WorldPacket const* packet)
 {
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
@@ -1390,7 +1392,7 @@ void PlayerbotMgr::TellError(std::string const botName, std::string const text)
 void PlayerbotMgr::CheckTellErrors(uint32 elapsed)
 {
     time_t now = time(nullptr);
-    if ((now - lastErrorTell) < 100/*sPlayerbotAIConfig->errorDelay*/ / 1000)
+    if ((now - lastErrorTell) < sPlayerbotAIConfig->errorDelay / 1000)
         return;
 
     lastErrorTell = now;
@@ -1474,7 +1476,7 @@ void PlayerbotsMgr::RemovePlayerBotData(uint64 const& guid, bool is_AI)
 
 PlayerbotAI* PlayerbotsMgr::GetPlayerbotAI(Player* player)
 {
-    if (/*!(sPlayerbotAIConfig->enabled) || */!player)
+    if (!(sPlayerbotAIConfig->enabled) || !player)
     {
         return nullptr;
     }
@@ -1493,7 +1495,7 @@ PlayerbotAI* PlayerbotsMgr::GetPlayerbotAI(Player* player)
 
 PlayerbotMgr* PlayerbotsMgr::GetPlayerbotMgr(Player* player)
 {
-    if (/*!(sPlayerbotAIConfig->enabled) ||*/ !player)
+    if (!(sPlayerbotAIConfig->enabled) || !player)
     {
         return nullptr;
     }

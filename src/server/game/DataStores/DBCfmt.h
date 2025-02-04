@@ -32,6 +32,7 @@ char const ChrClassesEntryfmt[] = "dixsxxxixiiiixxxxx";
 char const ChrRacesEntryfmt[] = "dxixiixxxxxxiisxxxxxxxxxxxxxxxxxxxxx";
 char const ChrClassesXPowerTypesfmt[] = "dii";
 char const ChrSpecializationfmt[] = "nxiixiixxxxxxx";
+char const CharSectionsEntryfmt[] = "diiixxxiii";
 char const CinematicCameraEntryfmt[] = "nsiffff";
 char const CinematicSequencesEntryfmt[] = "nxixxxxxxx";
 char const CreatureDisplayInfofmt[] = "dixxfxxxxxxxxxxxxxxx";

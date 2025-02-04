@@ -63,6 +63,7 @@ DBCStorage <ChrClassesEntry> sChrClassesStore(ChrClassesEntryfmt);
 DBCStorage <ChrRacesEntry> sChrRacesStore(ChrRacesEntryfmt);
 DBCStorage <ChrPowerTypesEntry> sChrPowerTypesStore(ChrClassesXPowerTypesfmt);
 DBCStorage <ChrSpecializationEntry> sChrSpecializationStore(ChrSpecializationfmt);
+DBCStorage <CharSectionsEntry> sChrSectionStore(CharSectionsEntryfmt);
 DBCStorage <CinematicCameraEntry> sCinematicCameraStore(CinematicCameraEntryfmt);
 DBCStorage <CinematicSequencesEntry> sCinematicSequencesStore(CinematicSequencesEntryfmt);
 DBCStorage <CreatureDisplayInfoEntry> sCreatureDisplayInfoStore(CreatureDisplayInfofmt);
@@ -735,6 +736,8 @@ void LoadDBCStores(const std::string& dataPath)
             sSpecializationClassStore[specializationInfo->classId][specializationInfo->TabPage] = j;
         }
     }
+
+    LoadDBC(availableDbcLocales, bad_dbc_files, sChrSectionStore, dbcPath, "CharSections.dbc");
 
     LoadDBC(availableDbcLocales, bad_dbc_files, sSpecializationSpellsStore, dbcPath, "SpecializationSpells.dbc");
     for (uint32 j = 0; j < sSpecializationSpellsStore.GetNumRows(); j++)

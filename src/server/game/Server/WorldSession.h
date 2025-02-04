@@ -226,12 +226,13 @@ class CharacterCreateInfo
     friend class WorldSession;
     friend class Player;
 
-protected:
+public:
     CharacterCreateInfo(std::string const& name, uint8 race, uint8 cclass, uint8 gender, uint8 skin, uint8 face, uint8 hairStyle, uint8 hairColor, uint8 facialHair, uint8 outfitId,
         WorldPacket& data) : Name(name), Race(race), Class(cclass), Gender(gender), Skin(skin), Face(face), HairStyle(hairStyle), HairColor(hairColor), FacialHair(facialHair),
         OutfitId(outfitId), Data(data), CharCount(0)
     { }
 
+protected:
     /// User specified variables
     std::string Name;
     uint8 Race;
@@ -517,6 +518,7 @@ public:
 
     z_stream_s* GetCompressionStream() { return _compressionStream; }
 
+    bool IsBot() { return m_isBot; }
 public:                                                 // opcodes handlers
     void Handle_NULL(WorldPacket& recvPacket) const;    // not used
     void Handle_EarlyProccess(WorldPacket& recvPacket); // just mark packets processed in WorldSocket::OnRead

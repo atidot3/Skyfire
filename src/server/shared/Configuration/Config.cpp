@@ -94,6 +94,17 @@ int ConfigMgr::GetIntDefault(const char* name, int def)
     return GetValueHelper(name, val) ? atoi(val.c_str()) : def;
 }
 
+uint32 ConfigMgr::GetUint32(const char* name, int def)
+{
+    ACE_TString val;
+    if (GetValueHelper(name, val))
+    {
+        return static_cast<uint32_t>(std::stoul(val.c_str()));
+    }
+
+    return def;
+}
+
 float ConfigMgr::GetFloatDefault(const char* name, float def)
 {
     ACE_TString val;

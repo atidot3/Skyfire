@@ -41,6 +41,7 @@ int m_ServiceStatus = -1;
 WorldDatabaseWorkerPool WorldDatabase;                      ///< Accessor to the world database
 CharacterDatabaseWorkerPool CharacterDatabase;              ///< Accessor to the character database
 LoginDatabaseWorkerPool LoginDatabase;                      ///< Accessor to the realm/login database
+PlayerbotDatabaseWorkerPool PlayerbotsDatabase;                      // Accessor to the authserver database
 
 #ifndef _SKYFIRE_WORLD_DATABASE_HOST
 # define _SKYFIRE_WORLD_DATABASE_HOST  ""

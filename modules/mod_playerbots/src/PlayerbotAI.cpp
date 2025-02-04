@@ -11,6 +11,7 @@
 #include <string>
 
 #include "Playerbots.h"
+#include "PlayerbotAIConfig.h"
 #include "ChannelMgr.h"
 #include "CreatureAIImpl.h"
 #include "GuildMgr.h"
@@ -107,7 +108,7 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
         {
         }
 
-        SetNextCheckDelay(/*sPlayerbotAIConfig->reactDelay*/100);
+        SetNextCheckDelay(sPlayerbotAIConfig->reactDelay);
         return;
     }
 
@@ -155,18 +156,18 @@ void PlayerbotAI::HandleTeleportAck()
         Reset(true);
     }*/
     }
-    SetNextCheckDelay(/*sPlayerbotAIConfig->globalCoolDown*/ 100);
+    SetNextCheckDelay(sPlayerbotAIConfig->globalCoolDown);
 }
 
-void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
+void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const* packet)
 {
-    if (packet.empty())
+    if (packet->empty())
         return;
     if (!bot || !bot->IsInWorld() || bot->IsDuringRemoveFromWorld())
     {
         return;
     }
-    switch (packet.GetOpcode())
+    switch (packet->GetOpcode())
     {
     case SMSG_SPELL_FAILURE:
     {
@@ -188,17 +189,30 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
     {
         return;
     }
+    case SMSG_TIME_SYNC_REQUEST:
+    {
+        WorldPacket p = *packet;
+        uint32 counter;
+        p >> counter;
+        uint32 clientTicks = time(NULL);
+        WorldPacket packet(CMSG_TIME_SYNC_RESPONSE);
+        packet.rpos(0);
+        packet << counter << clientTicks;
+
+        bot->GetSession()->HandleTimeSyncResp(packet);
+        break;
+    }
     default:
         return;// botOutgoingPacketHandlers.AddPacket(packet);
     }
 }
 
-void PlayerbotAI::HandleMasterIncomingPacket(WorldPacket const& /*packet*/)
+void PlayerbotAI::HandleMasterIncomingPacket(WorldPacket const* /*packet*/)
 {
     //masterIncomingPacketHandlers.AddPacket(packet);
 }
 
-void PlayerbotAI::HandleMasterOutgoingPacket(WorldPacket const& /*packet*/)
+void PlayerbotAI::HandleMasterOutgoingPacket(WorldPacket const* /*packet*/)
 {
     //masterOutgoingPacketHandlers.AddPacket(packet);
 }
