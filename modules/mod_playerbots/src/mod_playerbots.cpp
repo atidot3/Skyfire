@@ -26,6 +26,7 @@
 #include <random>
 #include <thread>
 
+# define _SKYFIRE_PLAYERBOT_CONFIG  "playerbots.conf"
 static const char* QUERY_ACCOUNT = "SELECT * FROM `account`";
 static const char* QUERY_CHARACTER = "SELECT * FROM `characters`";
 
@@ -56,10 +57,22 @@ public:
             SF_LOG_INFO("playerbots", " ");
             SF_LOG_INFO("playerbots", "Load Playerbots Config...");
 
+            if (!sConfigMgr->LoadMore(_SKYFIRE_PLAYERBOT_CONFIG))
+            {
+                SF_LOG_FATAL("playerbots", ">> Loaded playerbots failed, %s is not found", _SKYFIRE_PLAYERBOT_CONFIG);
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+                sWorld->StopNow(1);
+                return;
+            }
             sPlayerbotAIConfig->Initialize();
 
             SF_LOG_INFO("playerbots", ">> Loaded playerbots config in %u ms", GetMSTimeDiffToNow(oldMSTime));
             SF_LOG_INFO("playerbots", " ");
+
+
+            SF_LOG_INFO("playerbots", "Playerbots enabled: %s", sPlayerbotAIConfig->enabled ? "Yes" : "No");
+            SF_LOG_INFO("playerbots", "Playerbots min/max to load: %u/%u", sPlayerbotAIConfig->minRandomBots, sPlayerbotAIConfig->maxRandomBots);
+            SF_LOG_INFO("playerbots", "Playerbots autologin: %s", sPlayerbotAIConfig->randomBotAutologin ? "Yes" : "No");
         }
     }
 };

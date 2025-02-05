@@ -51,6 +51,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
         return;
 
     uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
+    SF_LOG_INFO("playerbots", "maxAllowedBotCount: %d, config min/max %u/%u", maxAllowedBotCount, sPlayerbotAIConfig->minRandomBots, sPlayerbotAIConfig->maxRandomBots);
     if (!maxAllowedBotCount || (maxAllowedBotCount < sPlayerbotAIConfig->minRandomBots ||
         maxAllowedBotCount > sPlayerbotAIConfig->maxRandomBots))
     {
@@ -652,6 +653,22 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player* const bot)
 {
     auto maxAllowed = sRandomPlayerbotMgr->GetMaxAllowedBotCount();
     SF_LOG_INFO("playerbots", "%u/%u Bot %s logged in", playerBots.size(), maxAllowed, bot->GetName().c_str());
+
+
+    // If this player has been created recently and is not assign horde / alliance as pandaren
+    if (bot->getRace() == RACE_PANDAREN_NEUTRAL)
+    {
+        static const uint32 JOIN_THE_ALLIANCE = 1;
+        static const uint32 JOIN_THE_HORDE = 0;
+
+        WorldPacket packet(Opcodes::CMSG_SELECT_FACTION);
+        packet << (std::rand() % 2 ? JOIN_THE_HORDE : JOIN_THE_ALLIANCE);
+
+        WorldSession* session = bot->GetSession();
+        session->HandleSelectFactionOpcode(packet);
+
+        SF_LOG_INFO("playerbots", "%s Assigned to faction: %s", bot->GetName().c_str(), (bot->GetTeamId() ? "Alliance" : "Horde"));
+    }
 
     /*if (sPlayerbotAIConfig->randomBotFixedLevel)
     {
