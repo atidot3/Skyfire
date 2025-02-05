@@ -87,8 +87,24 @@ message(STATUS "Final MODULES_SOURCES: ${MODULES_SOURCES}")
 # Création de la bibliothèque statique "modules"
 add_library(modules STATIC ${MODULES_SOURCES})
 
+# Fonction pour récupérer récursivement tous les sous-dossiers
+function(get_all_subdirectories result curdir)
+    file(GLOB_RECURSE children LIST_DIRECTORIES true ${curdir}/*)
+    set(subdirs "")
+    foreach(child ${children})
+        if (IS_DIRECTORY ${child})
+            list(APPEND subdirs ${child})
+        endif()
+    endforeach()
+    set(${result} ${subdirs} PARENT_SCOPE)
+endfunction()
+
+# Récupérer tous les sous-dossiers dans "modules/"
+get_all_subdirectories(ALL_MODULE_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+
 # Ajout des chemins d'inclusion nécessaires pour accéder aux fichiers comme "Player.h"
 target_include_directories(modules PRIVATE
+  ${ALL_MODULE_INCLUDES}
   ${CMAKE_BINARY_DIR}
   ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour
   ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Recast
