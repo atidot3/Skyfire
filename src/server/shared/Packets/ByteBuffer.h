@@ -62,12 +62,17 @@ public:
 
 //! Structure to ease conversions from single 64 bit integer guid into individual bytes, for packet sending purposes
 //! Nuke this out when porting ObjectGuid from MaNGOS, but preserve the per-byte storage
+
 struct ObjectGuid
 {
 public:
     ObjectGuid() { _data.u64 = UI64LIT(0); }
     ObjectGuid(uint64 guid) { _data.u64 = guid; }
     ObjectGuid(ObjectGuid const& other) { _data.u64 = other._data.u64; }
+
+    void Set(uint64 guid) { _data.u64 = guid; }
+
+    bool IsEmpty()             const { return _data.u64 == 0; }
 
     uint8& operator[](uint32 index)
     {
@@ -107,6 +112,11 @@ public:
         _data.u64 = other._data.u64;
         return *this;
     }
+
+    uint64 GetRawValue() const { return _data.u64; }
+
+public:
+    static ObjectGuid Empty() { return ObjectGuid(0); };
 
 private:
     union
@@ -499,6 +509,19 @@ public:
                 break;
             value += c;
         }
+        return *this;
+    }
+
+    ByteBuffer& operator<<(const ObjectGuid& guid)
+    {
+        append<uint64>(guid.GetRawValue());
+
+        return *this;
+    }
+
+    ByteBuffer& operator>>(ObjectGuid& guid)
+    {
+        guid.Set(read<uint64>());
         return *this;
     }
 
