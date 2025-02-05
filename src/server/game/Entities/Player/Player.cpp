@@ -27589,8 +27589,9 @@ void Player::SendTimeSync()
     m_timeSyncTimer = 10000;
     m_timeSyncServer = getMSTime();
 
-    if (m_timeSyncQueue.size() > 3)
-        SF_LOG_ERROR("network", "Not received CMSG_TIME_SYNC_RESPONSE for over 30 seconds from player %u (%s), possible cheater", GetGUIDLow(), GetName().c_str());
+    // bot spam
+    //if (m_timeSyncQueue.size() > 3)
+        //SF_LOG_ERROR("network", "Not received CMSG_TIME_SYNC_RESPONSE for over 30 seconds from player %u (%s), possible cheater", GetGUIDLow(), GetName().c_str());
 }
 
 void Player::SetReputation(uint32 factionentry, uint32 value)

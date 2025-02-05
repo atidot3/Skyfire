@@ -42,7 +42,7 @@ PlayerbotAI::PlayerbotAI()
     _aiObjectContext{ nullptr },
     _currentEngine{ nullptr },
     _engines{ nullptr },
-    currentState(BOT_STATE_NON_COMBAT)
+    _currentState(BOT_STATE_NON_COMBAT)
 {
 }
 
@@ -59,6 +59,9 @@ PlayerbotAI::PlayerbotAI(Player* bot)
     _engines[BOT_STATE_COMBAT] = AiFactory::createCombatEngine(bot, this, _aiObjectContext);
     _engines[BOT_STATE_NON_COMBAT] = AiFactory::createNonCombatEngine(bot, this, _aiObjectContext);
     _engines[BOT_STATE_DEAD] = AiFactory::createDeadEngine(bot, this, _aiObjectContext);
+
+    _currentEngine = _engines[BOT_STATE_NON_COMBAT];
+    _currentState = BOT_STATE_NON_COMBAT;
 }
 
 PlayerbotAI::~PlayerbotAI()
@@ -370,7 +373,7 @@ void PlayerbotAI::ChangeEngine(BotState type)
     if (_currentEngine != engine)
     {
         _currentEngine = engine;
-        currentState = type;
+        _currentState = type;
         ReInitCurrentEngine();
 
         switch (type)

@@ -97,7 +97,7 @@ protected:
     AiObjectContext* _aiObjectContext;
     Engine* _currentEngine;
     Engine* _engines[BOT_STATE_MAX];
-    BotState currentState;
+    BotState _currentState;
     //ChatHelper chatHelper;
     //std::list<ChatCommandHolder> chatCommands;
     //std::list<ChatQueuedReply> chatReplies;
