@@ -9,9 +9,22 @@
 
 #include <sstream>
 
-AppenderConsole::AppenderConsole(uint8 id, std::string const& name, LogLevel level, AppenderFlags flags) :
-    Appender(id, name, AppenderType::APPENDER_CONSOLE, level, flags), _colored(false)
+std::vector<ColorTypes> split(const std::string& str, char delimiteur)
 {
+    std::vector<ColorTypes> tokens;
+    std::stringstream ss(str);
+    std::string token;
+
+    while (std::getline(ss, token, delimiteur))
+        tokens.push_back(ColorTypes(std::atoi(token.c_str())));
+
+    return tokens;
+}
+
+AppenderConsole::AppenderConsole(uint8 id, std::string const& name, LogLevel level, AppenderFlags flags) :
+    Appender(id, name, AppenderType::APPENDER_CONSOLE, level, flags), _colors{ MaxColors }, _colored(false)
+{
+    _colors.reserve(MaxColors);
     for (uint8 i = 0; i < MaxLogLevels; ++i)
         _colors[i] = ColorTypes(MaxColors);
 }
@@ -24,25 +37,8 @@ void AppenderConsole::InitColors(std::string const& str)
         return;
     }
 
-    int color[MaxLogLevels];
-
-    std::istringstream ss(str);
-
-    for (uint8 i = 0; i < MaxLogLevels; ++i)
-    {
-        ss >> color[i];
-
-        if (!ss)
-            return;
-
-        if (color[i] < 0 || color[i] >= MaxColors)
-            return;
-    }
-
-    for (uint8 i = 0; i < MaxLogLevels; ++i)
-        _colors[i] = ColorTypes(color[i]);
-
-    _colored = true;
+    _colors = split(str, ' ');
+    _colored = _colors.size() > 0;
 }
 
 void AppenderConsole::SetColor(bool stdout_stream, ColorTypes color)
@@ -59,18 +55,18 @@ void AppenderConsole::SetColor(bool stdout_stream, ColorTypes color)
         FOREGROUND_GREEN | FOREGROUND_BLUE,                 // CYAN
         FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE, // WHITE
         // YELLOW
-FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
-// RED_BOLD
-FOREGROUND_RED | FOREGROUND_INTENSITY,
-// GREEN_BOLD
-FOREGROUND_GREEN | FOREGROUND_INTENSITY,
-FOREGROUND_BLUE | FOREGROUND_INTENSITY,             // BLUE_BOLD
-// MAGENTA_BOLD
-FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
-// CYAN_BOLD
-FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
-// WHITE_BOLD
-FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
+        FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
+        // RED_BOLD
+        FOREGROUND_RED | FOREGROUND_INTENSITY,
+        // GREEN_BOLD
+        FOREGROUND_GREEN | FOREGROUND_INTENSITY,
+        FOREGROUND_BLUE | FOREGROUND_INTENSITY,             // BLUE_BOLD
+        // MAGENTA_BOLD
+        FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+        // CYAN_BOLD
+        FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+        // WHITE_BOLD
+        FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
     };
 
     HANDLE hConsole = GetStdHandle(stdout_stream ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE);

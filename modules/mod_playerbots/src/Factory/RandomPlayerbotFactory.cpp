@@ -504,10 +504,6 @@ void RandomPlayerbotFactory::CreateRandomBots()
         const auto name_result = sObjectMgr->CheckPlayerName(name);
         if (name_result == ResponseCodes::CHAR_NAME_SUCCESS)
             nameCache[gender].push_back(name);
-        else
-        {
-            SF_LOG_ERROR("playerbots", "sObjectMgr->CheckPlayerName %u", (uint32)name_result);
-        }
     } while (result->NextRow());
 
     for (uint32 accountNumber = 0; accountNumber < sPlayerbotAIConfig->randomBotAccountCount; ++accountNumber)

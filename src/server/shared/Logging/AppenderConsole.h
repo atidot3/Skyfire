@@ -41,7 +41,7 @@ private:
     void ResetColor(bool stdout_stream);
     void _write(LogMessage const& message);
     bool _colored;
-    ColorTypes _colors[MaxLogLevels];
+    std::vector<ColorTypes> _colors;
 };
 
 #endif
