@@ -51,7 +51,6 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
         return;
 
     uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
-    SF_LOG_INFO("playerbots", "maxAllowedBotCount: %d, config min/max %u/%u", maxAllowedBotCount, sPlayerbotAIConfig->minRandomBots, sPlayerbotAIConfig->maxRandomBots);
     if (!maxAllowedBotCount || (maxAllowedBotCount < sPlayerbotAIConfig->minRandomBots ||
         maxAllowedBotCount > sPlayerbotAIConfig->maxRandomBots))
     {
@@ -119,16 +118,6 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
 
                 if (!loginBots)
                     break;
-            }
-        }
-        else if (loginBots && !botLoading.empty())
-        {
-            for (const auto chtr : _currentBots)
-            {
-                if (botLoading.find(chtr) != botLoading.end())
-                {
-                    SF_LOG_INFO("playerbots", "%d already defined in _currentBots", chtr);
-                }
             }
         }
     }

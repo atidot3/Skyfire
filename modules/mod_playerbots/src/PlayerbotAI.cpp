@@ -69,6 +69,8 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
         bot->IsDuringRemoveFromWorld())
         return;
 
+    ///AllowActivity();
+
     if (!CanUpdateAI())
         return;
 
