@@ -479,7 +479,9 @@ bool RandomPlayerbotMgr::IsRandomBot(Player* bot)
 
 bool RandomPlayerbotMgr::IsRandomBot(uint64 bot)
 {
-    if (std::find(_currentBots.begin(), _currentBots.end(), bot) != _currentBots.end())
+    if (!sPlayerbotAIConfig->IsInRandomAccountList(bot))
+        return false;
+    else if (std::find(_currentBots.begin(), _currentBots.end(), bot) != _currentBots.end())
     {
         return true;
     }

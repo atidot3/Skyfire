@@ -21,8 +21,33 @@ enum BotState
     BOT_STATE_MAX
 };
 
+enum BotRoles : uint8
+{
+    BOT_ROLE_NONE = 0x00,
+    BOT_ROLE_TANK = 0x01,
+    BOT_ROLE_HEALER = 0x02,
+    BOT_ROLE_DPS = 0x04
+};
+
+enum ActivityType
+{
+    GRIND_ACTIVITY = 1,
+    RPG_ACTIVITY = 2,
+    TRAVEL_ACTIVITY = 3,
+    OUT_OF_PARTY_ACTIVITY = 4,
+    PACKET_ACTIVITY = 5,
+    DETAILED_MOVE_ACTIVITY = 6,
+    PARTY_ACTIVITY = 7,
+    ALL_ACTIVITY = 8,
+
+    MAX_ACTIVITY_TYPE
+};
+
 class Position;
 class Player;
+class AiObjectContext;
+class Engine;
+
 class PlayerbotAI : public PlayerbotAIBase
 {
 public:
@@ -32,15 +57,20 @@ public:
 
     void UpdateAI(uint32 elapsed, bool minimal = false) override;
     void UpdateAIInternal(uint32 elapsed, bool minimal = false) override;
+    bool AllowActivity(ActivityType activityType = ALL_ACTIVITY, bool checkNow = false);
+    bool AllowActive(ActivityType activityType);
+    void DoNextAction(bool min);
 
     void HandleBotOutgoingPacket(WorldPacket const* packet);
     void HandleMasterIncomingPacket(WorldPacket const* packet);
     void HandleMasterOutgoingPacket(WorldPacket const* packet);
     void HandleTeleportAck();
     
-
+    void ChangeEngine(BotState type);
+    void ReInitCurrentEngine();
     Player* GetBot() { return bot; }
     Player* GetMaster() { return master; }
+    AiObjectContext* GetAiObjectContext() { return _aiObjectContext; }
 
     // Checks if the bot is really a player. Players always have themselves as master.
     bool IsRealPlayer() { return master ? (master == bot) : false; }
@@ -52,6 +82,8 @@ public:
     // Checks if the bot is summoned as alt of a player
     bool IsAlt();
 
+    bool HasStrategy(std::string const name, BotState type);
+
     void SetMaster(Player* newMaster) { master = newMaster; }
 
     bool CanMove();
@@ -62,9 +94,9 @@ protected:
     Player* bot;
     Player* master;
     uint32 accountId;
-    //AiObjectContext* aiObjectContext;
-    //Engine* currentEngine;
-    //Engine* engines[BOT_STATE_MAX];
+    AiObjectContext* _aiObjectContext;
+    Engine* _currentEngine;
+    Engine* _engines[BOT_STATE_MAX];
     BotState currentState;
     //ChatHelper chatHelper;
     //std::list<ChatCommandHolder> chatCommands;
@@ -77,8 +109,8 @@ protected:
     //std::map<std::string, time_t> whispers;
     //std::pair<ChatMsg, time_t> currentChat;
     //static std::set<std::string> unsecuredCommands;
-    //bool allowActive[MAX_ACTIVITY_TYPE];
-    //time_t allowActiveCheckTimer[MAX_ACTIVITY_TYPE];
+    bool _allowActive[MAX_ACTIVITY_TYPE];
+    time_t _allowActiveCheckTimer[MAX_ACTIVITY_TYPE];
     //bool inCombat = false;
     //BotCheatMask cheatMask = BotCheatMask::none;
     //Position jumpDestination = Position();

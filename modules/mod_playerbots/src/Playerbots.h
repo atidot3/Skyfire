@@ -6,11 +6,14 @@
 #ifndef _PLAYERBOT_H
 #define _PLAYERBOT_H
 
+#include "AiObjectContext.h"
 #include "Group.h"
 #include "Pet.h"
 #include "PlayerbotAI.h"
+#include "PlayerbotAIConfig.h"
 #include "PlayerbotMgr.h"
 #include "RandomPlayerbotMgr.h"
+#include "SharedValueContext.h"
 #include "Spell.h"
 #include "SpellMgr.h"
 

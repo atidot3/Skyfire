@@ -421,7 +421,7 @@ void PlayerbotHolder::DisablePlayerBot(uint64 guid)
             //sPlayerbotDbStore->Save(botAI);
         }
 
-        SF_LOG_DEBUG("playerbots", "Bot {} logged out", bot->GetName().c_str());
+        SF_LOG_DEBUG("playerbots", "Bot %s logged out", bot->GetName().c_str());
 
         bot->SaveToDB(false);
 
