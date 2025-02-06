@@ -49,7 +49,10 @@ void ExternalEventHelper::HandlePacket(std::map<uint16, std::string>& handlers, 
 
     Trigger* trigger = aiObjectContext->GetTrigger(name);
     if (!trigger)
+    {
+        SF_LOG_ERROR("playerbots", "No trigger defined for packet: %s", name.c_str());
         return;
+    }
 
     WorldPacket p(packet);
     trigger->ExternalEvent(p, owner);

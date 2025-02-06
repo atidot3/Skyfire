@@ -141,6 +141,8 @@ public:
     bool    m_removed;                                  // prevent overwrite pet state in DB at next Pet::Update if pet already removed(saved)
 
     Player* GetOwner() const;
+    bool IsTemporary() const { return m_temporary; }    // Stampede
+    void SetTemporary() { m_temporary = true; }
 
 protected:
     PetType m_petType;
@@ -148,6 +150,7 @@ protected:
     uint64  m_auraRaidUpdateMask;
     bool    m_loading;
     uint32  m_regenTimer;
+    bool    m_temporary = false;
 
     DeclinedName* m_declinedname;
 

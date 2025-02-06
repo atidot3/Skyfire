@@ -308,6 +308,7 @@ void Unit::Update(uint32 p_time)
     if (!IsInWorld())
         return;
 
+    _functionsDelayed.Update(p_time);
     _UpdateSpells(p_time);
 
     // If this is set during update SetCantProc(false) call is missing somewhere in the code
@@ -17215,4 +17216,9 @@ void Unit::SendMissileCancel(uint32 spellId, bool cancel)
     data << spellId;
     data.WriteGuidBytes(guid, 2, 3, 7, 5, 0, 6);
     SendMessageToSet(&data, true);
+}
+
+void Unit::AddDelayedEvent(uint64 timeOffset, std::function<void()>&& function)
+{
+    _functionsDelayed.AddDelayedEvent(timeOffset, std::move(function));
 }

@@ -43,10 +43,23 @@ enum ActivityType
     MAX_ACTIVITY_TYPE
 };
 
-class Position;
-class Player;
 class AiObjectContext;
 class Engine;
+class ExternalEventHelper;
+class Player;
+class Position;
+
+class PacketHandlingHelper
+{
+public:
+    void AddHandler(uint16 opcode, std::string const handler);
+    void Handle(ExternalEventHelper& helper);
+    void AddPacket(WorldPacket const& packet);
+
+private:
+    std::map<uint16, std::string> _handlers;
+    std::stack<WorldPacket> _queue;
+};
 
 class PlayerbotAI : public PlayerbotAIBase
 {
@@ -101,9 +114,9 @@ protected:
     //ChatHelper chatHelper;
     //std::list<ChatCommandHolder> chatCommands;
     //std::list<ChatQueuedReply> chatReplies;
-    //PacketHandlingHelper botOutgoingPacketHandlers;
-    //PacketHandlingHelper masterIncomingPacketHandlers;
-    //PacketHandlingHelper masterOutgoingPacketHandlers;
+    PacketHandlingHelper botOutgoingPacketHandlers;
+    PacketHandlingHelper masterIncomingPacketHandlers;
+    PacketHandlingHelper masterOutgoingPacketHandlers;
     //CompositeChatFilter chatFilter;
     //PlayerbotSecurity security;
     //std::map<std::string, time_t> whispers;

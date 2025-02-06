@@ -284,6 +284,8 @@ void GameObject::Update(uint32 diff)
     else if (!AIM_Initialize())
         SF_LOG_ERROR("misc", "Could not initialize GameObjectAI");
 
+    _functions_delayed.Update(diff);
+
     switch (m_lootState)
     {
         case LootState::GO_NOT_READY:
@@ -2295,4 +2297,9 @@ private:
 GameObjectModel* GameObject::CreateModel()
 {
     return GameObjectModel::Create(std::make_unique<GameObjectModelOwnerImpl>(this), sWorld->GetDataPath());
+}
+
+void GameObject::AddDelayedEvent(uint64 timeOffset, std::function<void()>&& function)
+{
+    _functions_delayed.AddDelayedEvent(timeOffset, std::move(function));
 }

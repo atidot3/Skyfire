@@ -263,6 +263,12 @@ void TempSummon::RemoveFromWorld()
                     owner->m_SummonSlot[slot] = 0;
     }
 
+    if (Unit* owner = GetSummoner())
+    {
+        owner->RemoveSummon(this);
+        // Battlepet management here
+    }
+
     //if (GetOwnerGUID())
     //    SF_LOG_ERROR("entities.unit", "Unit %u has owner guid when removed from world", GetEntry());
 

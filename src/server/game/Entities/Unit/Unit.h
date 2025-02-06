@@ -10,6 +10,7 @@
 #include "EventProcessor.h"
 #include "FollowerReference.h"
 #include "FollowerRefManager.h"
+#include "FunctionProcessor.h"
 #include "HostileRefManager.h"
 #include "MotionMaster.h"
 #include "MoveSplineInit.h"
@@ -2360,6 +2361,11 @@ public:
     Spell* FindCurrentSpellBySpellId(uint32 spell_id) const;
     int32 GetCurrentSpellCastTime(uint32 spell_id) const;
 
+    void AddSummon(TempSummon* summon) { m_summons.push_back(summon); }
+    void RemoveSummon(TempSummon* summon) { m_summons.remove(summon); }
+    void GetSummons(std::list<TempSummon*>& list, uint32 entry);
+    std::list<TempSummon*> const& GetSummons() const { return m_summons; }
+
     uint64 m_SummonSlot[MAX_SUMMON_SLOT];
     uint64 m_ObjectSlot[MAX_GAMEOBJECT_SLOT];
 
@@ -2847,6 +2853,7 @@ public:
         m_overrideAutoattackRange = range;
     }
 
+    void AddDelayedEvent(uint64 timeOffset, std::function<void()>&& function);
 protected:
     explicit Unit(bool isWorldObject);
 
@@ -2923,6 +2930,8 @@ protected:
     uint32 m_unitTypeMask;
     LiquidTypeEntry const* _lastLiquid;
 
+    std::list<TempSummon*> m_summons;
+
     bool IsAlwaysVisibleFor(WorldObject const* seer) const override;
     bool IsAlwaysDetectableFor(WorldObject const* seer) const override;
 
@@ -2974,6 +2983,8 @@ private:
     bool _isWalkingBeforeCharm; // Are we walking before we were charmed?
 
     time_t _lastDamagedTime; // Part of Evade mechanics
+
+    FunctionProcessor _functionsDelayed;
 };
 
 namespace Skyfire

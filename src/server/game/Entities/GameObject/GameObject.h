@@ -820,6 +820,8 @@ public:
     void UpdateModelPosition();
 
     uint32 GetGOStateValue(GOState state);
+
+    void AddDelayedEvent(uint64 timeOffset, std::function<void()>&& function);
 protected:
     bool AIM_Initialize();
     GameObjectModel* CreateModel();
@@ -862,5 +864,6 @@ private:
         return IsInRange(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), dist2compare);
     }
     GameObjectAI* m_AI;
+    FunctionProcessor _functions_delayed;
 };
 #endif

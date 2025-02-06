@@ -649,16 +649,20 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player* const bot)
     // If this player has been created recently and is not assign horde / alliance as pandaren
     if (bot->getRace() == RACE_PANDAREN_NEUTRAL)
     {
-        static const uint32 JOIN_THE_ALLIANCE = 1;
-        static const uint32 JOIN_THE_HORDE = 0;
+        // Allow player to get fully logged
+        bot->AddDelayedEvent(5000, [bot]()
+        {
+            static const uint32 JOIN_THE_ALLIANCE = 1;
+            static const uint32 JOIN_THE_HORDE = 0;
 
-        WorldPacket packet(Opcodes::CMSG_SELECT_FACTION);
-        packet << (std::rand() % 2 ? JOIN_THE_HORDE : JOIN_THE_ALLIANCE);
+            WorldPacket packet(Opcodes::CMSG_SELECT_FACTION);
+            packet << (std::rand() % 2 ? JOIN_THE_HORDE : JOIN_THE_ALLIANCE);
 
-        WorldSession* session = bot->GetSession();
-        session->HandleSelectFactionOpcode(packet);
+            WorldSession* session = bot->GetSession();
+            session->HandleSelectFactionOpcode(packet);
 
-        SF_LOG_INFO("playerbots", "%s Assigned to faction: %s", bot->GetName().c_str(), (bot->GetTeamId() ? "Alliance" : "Horde"));
+            SF_LOG_INFO("playerbots", "%s Assigned to faction: %s", bot->GetName().c_str(), (bot->GetTeamId() ? "Alliance" : "Horde"));
+        });        
     }
 
     /*if (sPlayerbotAIConfig->randomBotFixedLevel)
